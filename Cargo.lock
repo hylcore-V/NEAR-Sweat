@@ -562,6 +562,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "sweat-coin"
+version = "0.1.0"
+dependencies = [
+ "near-contract-standards",
+ "near-sdk",
+]
+
+[[package]]
 name = "syn"
 version = "1.0.57"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -570,14 +578,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-xid",
-]
-
-[[package]]
-name = "test-token"
-version = "0.1.0"
-dependencies = [
- "near-contract-standards",
- "near-sdk",
 ]
 
 [[package]]
