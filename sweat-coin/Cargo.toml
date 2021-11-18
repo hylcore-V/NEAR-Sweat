@@ -1,0 +1,16 @@
+[package]
+name = "sweat-coin"
+version = "0.1.0"
+authors = ["Illia Polosukhin <illia.polosukhin@gmail.com>"]
+edition = "2018"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+
+[dependencies]
+# near-sdk = { git = "https://github.com/near/near-sdk-rs", rev = "9d99077" }
+# near-contract-standards = { git = "https://github.com/near/near-sdk-rs", rev = "9d99077" }
+near-sdk = "3.1.0"
+near-contract-standards = "3.1.0"
