@@ -4,7 +4,7 @@ use near_contract_standards::fungible_token::metadata::{
 use near_contract_standards::fungible_token::FungibleToken;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::json_types::{ValidAccountId, U128};
-use near_sdk::{near_bindgen, AccountId, PanicOnDefault, PromiseOrValue, env, Balance, BlockHeight};
+use near_sdk::{near_bindgen, AccountId, PanicOnDefault, PromiseOrValue, env, Balance};
 
 near_sdk::setup_alloc!();
 
@@ -14,8 +14,6 @@ pub struct Contract {
     oracle_id: AccountId,
     limit_per_day: Balance,
     token: FungibleToken,
-    last_block_update: BlockHeight,
-    avg_minted: Balance,
 }
 
 #[near_bindgen]
@@ -26,8 +24,6 @@ impl Contract {
             oracle_id,
             limit_per_day: limit_per_day.into(),
             token: FungibleToken::new(b"t".to_vec()),
-            last_block_update: 0,
-            avg_minted: 0,
         }
     }
 
@@ -37,21 +33,14 @@ impl Contract {
 
     pub fn batch_record(&mut self, steps_batch: Vec<(ValidAccountId, u64)>) {
         assert_eq!(env::predecessor_account_id(), self.oracle_id);
-        let mut amount_minted = 0;
         for (account_id, steps) in steps_batch.into_iter() {
             if !self.token.accounts.contains_key(account_id.as_ref()) {
                 self.token.internal_register_account(account_id.as_ref());
             }
             let amount = self.internal_step_to_amount(steps);
-            amount_minted += amount;
+            // TODO: add check how much is minted per user.
             self.token
                 .internal_deposit(account_id.as_ref(), amount);
-        }
-        if self.last_block_update == env::block_index() {
-            self.avg_minted += amount_minted;
-        } else {
-            self.avg_minted = self.avg_minted * (env::block_index() - self.last_block_update) as u128 / 86400u128 + amount_minted / 86400u128;
-            assert!(self.avg_minted < self.limit_per_day);
         }
     }
 }
