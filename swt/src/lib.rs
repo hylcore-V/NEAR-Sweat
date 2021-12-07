@@ -33,15 +33,10 @@ impl Contract {
         return self.steps_from_tge
     }
 
-    pub fn batch_record(&mut self, steps_batch: Vec<(ValidAccountId, u32)>) {
+    pub fn record_batch(&mut self, steps_batch: Vec<(ValidAccountId, u32)>) {
         assert_eq!(env::predecessor_account_id(), self.oracle_id);
         for (account_id, steps) in steps_batch.into_iter() {
-            if !self.token.accounts.contains_key(account_id.as_ref()) {
-                self.token.internal_register_account(account_id.as_ref());
-            }
-            let amount = self.formula(steps);
-            self.token.internal_deposit(account_id.as_ref(), amount);
-            self.steps_from_tge += steps as u128;
+            self.record(account_id, steps);
         }
     }
 
@@ -53,7 +48,7 @@ impl Contract {
         let amount = self.formula(steps);
         self.token.internal_deposit(account_id.as_ref(), amount);
         //self.token.ft_transfer(account_id.as_ref(), amount, "0"); 
-        // :TODO: or make near vall via rpc to transfer
+        // :TODO: or make near call via rpc to refresh wallet balance?
         self.steps_from_tge += steps as u128;
     }
 
