@@ -5,6 +5,7 @@ use near_contract_standards::fungible_token::FungibleToken;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::json_types::{ValidAccountId, U128};
 use near_sdk::{near_bindgen, AccountId, PanicOnDefault, PromiseOrValue, env, Balance};
+use near_sdk::collections::LookupSet;
 
 near_sdk::setup_alloc!();
 
@@ -13,7 +14,7 @@ const ICON: &'static str = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2
 #[near_bindgen]
 #[derive(BorshSerialize, BorshDeserialize, PanicOnDefault)]
 pub struct Contract {
-    oracle_id: AccountId,
+    oracles: LookupSet<AccountId>,
     token: FungibleToken,
     steps_from_tge: u128,
 }
@@ -21,9 +22,14 @@ pub struct Contract {
 #[near_bindgen]
 impl Contract {
     #[init]
-    pub fn new(oracle_id: AccountId) -> Self {
+    pub fn new(oracles_vec: Vec<AccountId>) -> Self {
+        let mut oracles_tree = LookupSet::new(b"s");
+        for oracle in oracles_vec.iter() {
+            env::log(oracle.as_bytes());
+            oracles_tree.insert(oracle);
+        }
         Self {
-            oracle_id,
+            oracles: oracles_tree,
             token: FungibleToken::new(b"t".to_vec()),
             steps_from_tge: 0
         }
@@ -34,14 +40,16 @@ impl Contract {
     }
 
     pub fn record_batch(&mut self, steps_batch: Vec<(ValidAccountId, u32)>) {
-        assert_eq!(env::predecessor_account_id(), self.oracle_id);
+        //assert_eq!(env::predecessor_account_id(), self.oracle_id);
+        assert_eq!(true, self.oracles.contains(&env::predecessor_account_id()));
         for (account_id, steps) in steps_batch.into_iter() {
             self.record(account_id, steps);
         }
     }
 
     pub fn record(&mut self, account_id: ValidAccountId, steps: u32) {
-        assert_eq!(env::predecessor_account_id(), self.oracle_id);
+        // assert_eq!(env::predecessor_account_id(), self.oracle_id);
+        assert_eq!(true, self.oracles.contains(&env::predecessor_account_id()));
         if !self.token.accounts.contains_key(account_id.as_ref()) {
             self.token.internal_register_account(account_id.as_ref());
         }
@@ -116,7 +124,8 @@ mod tests {
     fn test_steps_from_tge() {
         let context = get_context(vec![], false);
         testing_env!(context);
-        let mut contract = Contract::new("intmainreturn0.testnet".to_string());
+        let oracles = vec!["intmainreturn0.testnet".to_string()];
+        let mut contract = Contract::new(oracles);
         assert_eq!(0, contract.get_steps_from_tge());
     
         contract.record("alice.testnet".try_into().unwrap(), 10_000);
@@ -130,7 +139,8 @@ mod tests {
     fn test_formula() {
         let context = get_context(vec![], false);
         testing_env!(context);
-        let mut contract = Contract::new("intmainreturn0.testnet".to_string());
+        let oracles = vec!["intmainreturn0.testnet".to_string()];
+        let mut contract = Contract::new(oracles);
         assert_eq!(0, contract.get_steps_from_tge());
         println!("get_steps_from_tge() = {}", contract.get_steps_from_tge());
 
@@ -154,7 +164,8 @@ mod tests {
     fn test_formula2() {
         let context = get_context(vec![], false);
         testing_env!(context);
-        let mut contract = Contract::new("intmainreturn0.testnet".to_string());
+        let oracles = vec!["intmainreturn0.testnet".to_string()];
+        let contract = Contract::new(oracles);
         assert_eq!(0, contract.get_steps_from_tge());
         println!("get_steps_from_tge() = {}", contract.get_steps_from_tge());
 
