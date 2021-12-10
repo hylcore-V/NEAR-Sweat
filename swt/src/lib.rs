@@ -53,8 +53,8 @@ impl Contract {
     }
 
     pub fn formula(&self, steps: u32) -> Balance {
-        // const K:f64 = 0.9999999999999762;
-        const K:f64 = 0.9999;
+        const K:f64 = 0.9999999999999762;
+        // const K:f64 = 0.9999;
         // TODO: think about types here
         (   (
                 K.powi((steps as i32) + (self.steps_from_tge as i32) + 1) - 
@@ -72,8 +72,8 @@ impl FungibleTokenMetadataProvider for Contract {
     fn ft_metadata(&self) -> FungibleTokenMetadata {
         FungibleTokenMetadata {
             spec: "ft-1.0".to_string(),
-            name: "SWT 0.1".to_string(),
-            symbol: "SWT 0.1".to_string(),
+            name: "SWT (v0.2)".to_string(),
+            symbol: "SWT (v0.2)".to_string(),
             icon: Some(String::from(ICON)),
             reference: None,
             reference_hash: None,
@@ -83,9 +83,7 @@ impl FungibleTokenMetadataProvider for Contract {
 }
 
 
-
-
-
+// :TODO: sandbox tests?
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -150,4 +148,17 @@ mod tests {
         assert_eq!(3, a1 / a2)
     }
 
+    // test formula at 0 steps_from_tge
+
+    #[test]
+    fn test_formula2() {
+        let context = get_context(vec![], false);
+        testing_env!(context);
+        let mut contract = Contract::new("intmainreturn0.testnet".to_string());
+        assert_eq!(0, contract.get_steps_from_tge());
+        println!("get_steps_from_tge() = {}", contract.get_steps_from_tge());
+
+        let a1 = contract.formula(10_000);
+        println!("formula({}) = {}", 10_000, a1);
+    }
 }
