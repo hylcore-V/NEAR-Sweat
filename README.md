@@ -50,7 +50,7 @@ https://explorer.testnet.near.org/transactions/Bww2kj8C9tJFdwnB2urWCebBASQgt6Uq8
 - About dev-deploy (https://stackoverflow.com/a/69538060/1655153)
 - https://docs.near.org/docs/tools/near-cli#near-dev-deploy
 
-#### 🎇 mint, transfer, balance...
+#### 🎇 Mint, Transfer, Balance...
 
 ```shell
 ⨐t
@@ -59,6 +59,7 @@ ntmainreturn0.testnet get_steps_from_tge '{}'
 near view swt05.intmainreturn0.testnet formula '{"steps": 10000}'
 10
 
+#### mint to myself 🚶‍
 near view swt05.intmainreturn0.testnet ft_balance_of '{"account_id":"intmainreturn0.testnet"}'
 '0'
 
@@ -68,7 +69,6 @@ https://explorer.testnet.near.org/transactions/8uC2uwb7jgR3WD3iPmybntwc6f2qHXdH2
 near view swt05.intmainreturn0.testnet ft_balance_of '{"account_id":"intmainreturn0.testnet"}'
 '10'
 
-#### mint to myself 🚶‍
 owls-MacBook-Pro:swt-near owl$ near view swt05.intmainreturn0.testnet get_steps_from_tge '{}'
 10000
 
