@@ -53,7 +53,7 @@ impl Contract {
         if !self.token.accounts.contains_key(account_id.as_ref()) {
             self.token.internal_register_account(account_id.as_ref());
         }
-        let amount = self.formula(steps);
+        let amount = self.formula(steps) * 1000000000000000000;
         self.token.internal_deposit(account_id.as_ref(), amount);
         //self.token.ft_transfer(account_id.as_ref(), amount, "0"); 
         // :TODO: or make near call via rpc to refresh wallet balance?
