@@ -48,14 +48,15 @@ impl Contract {
         }
     }
 
-    pub fn record(&mut self, account_id: ValidAccountId, steps: u32) {
+    pub fn record(&mut self, account_id: ValidAccountId, steps: u32) -> f64 {
         assert_eq!(true, self.oracles.contains(&env::predecessor_account_id()));
         if !self.token.accounts.contains_key(account_id.as_ref()) {
             self.token.internal_register_account(account_id.as_ref());
         }
-        let amount = self.formula(steps);
-        self.token.internal_deposit(account_id.as_ref(), amount as u128);
+        let swt = self.formula(steps);
+        self.token.internal_deposit(account_id.as_ref(), swt as u128);
         self.steps_from_tge += f64::from(steps);
+        return swt
     }
 
     pub fn formula(&self, steps: u32) -> f64 {
@@ -120,50 +121,12 @@ mod tests {
         testing_env!(context);
         let oracles = vec!["intmainreturn0.testnet".to_string()];
         let mut contract = Contract::new(oracles);
-        assert_eq!(0, contract.get_steps_from_tge());
+        assert_eq!(0., contract.get_steps_from_tge());
     
         contract.record("alice.testnet".try_into().unwrap(), 10_000);
-        assert_eq!(10_000, contract.get_steps_from_tge());
+        assert_eq!(10_000., contract.get_steps_from_tge());
         
         contract.record("alice.testnet".try_into().unwrap(), 15_000);
-        assert_eq!(10_000 + 15_000, contract.get_steps_from_tge());
-    }
-
-    #[test]
-    fn test_formula() {
-        let context = get_context(vec![], false);
-        testing_env!(context);
-        let oracles = vec!["intmainreturn0.testnet".to_string()];
-        let mut contract = Contract::new(oracles);
-        assert_eq!(0, contract.get_steps_from_tge());
-        println!("get_steps_from_tge() = {}", contract.get_steps_from_tge());
-
-        let a1 = contract.formula(10_000);
-        println!("formula({}) = {}", 10_000, a1);
-        
-        contract.record("alice.testnet".try_into().unwrap(), 10_000);
-        assert_eq!(10_000, contract.get_steps_from_tge());
-        println!("get_steps_from_tge() = {}", contract.get_steps_from_tge());
-        
-        let a2 = contract.formula(10_000);
-        println!("formula({}) = {}", 10_000, a2);
-
-        // 0.9999 через 10к шагов сложность вырстет в 3 раза
-        assert_eq!(3, a1 / a2)
-    }
-
-    // test formula at 0 steps_from_tge
-
-    #[test]
-    fn test_formula2() {
-        let context = get_context(vec![], false);
-        testing_env!(context);
-        let oracles = vec!["intmainreturn0.testnet".to_string()];
-        let contract = Contract::new(oracles);
-        assert_eq!(0, contract.get_steps_from_tge());
-        println!("get_steps_from_tge() = {}", contract.get_steps_from_tge());
-
-        let a1 = contract.formula(10_000);
-        println!("formula({}) = {}", 10_000, a1);
+        assert_eq!(10_000. + 15_000., contract.get_steps_from_tge());
     }
 }
