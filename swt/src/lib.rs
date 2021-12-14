@@ -53,16 +53,16 @@ impl Contract {
         if !self.token.accounts.contains_key(account_id.as_ref()) {
             self.token.internal_register_account(account_id.as_ref());
         }
-        let swt = self.formula(steps);
+        let swt = self.formula(self.steps_from_tge, steps);
         self.token.internal_deposit(account_id.as_ref(), swt as u128);
         self.steps_from_tge += f64::from(steps);
         return swt
     }
 
-    pub fn formula(&self, steps: u32) -> f64 {
+    pub fn formula(&self, steps_from_tge: f64, steps: u32) -> f64 {
         return (
-            DECIMALS * K.powf(f64::from(steps) + self.steps_from_tge + 1.) - 
-            DECIMALS * K.powf(self.steps_from_tge + 1.)
+            DECIMALS * K.powf(f64::from(steps) + steps_from_tge + 1.) - 
+            DECIMALS * K.powf(steps_from_tge + 1.)
         ) / ( K - 1.) / 1000.;
     }
 }
