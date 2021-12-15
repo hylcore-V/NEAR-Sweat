@@ -120,28 +120,140 @@ mod tests {
     fn test_formula() {
         let context = get_context(vec![], false);
         testing_env!(context);
+        let oracles = vec!["intmainreturn0.testnet".to_string()];
+        let contract = Contract::new(oracles);
+        let steps_to_convert:u32 = 10_000;
+        let steps_from_tge:u64 = 1000000000000 as u64;
         
+        let res: U64 = contract.formula(U64(steps_from_tge), steps_to_convert);
+        assert_eq!(U64(9765207431634329600), res);
+        // 9765207431634329600
+        println!("formula = {}", u64::from(res));
+        // near call swt1.intmainreturn000.testnet formula '{"steps_from_tge":"1000000000000", "steps": 10000}' --accountId intmainreturn00.testnet --gas=300000000000000
+        // '9765207431634329600' ✅
+    }
+
+
+    #[test]
+    fn test_formula2() {
+        let context = get_context(vec![], false);
+        testing_env!(context); 
+        let oracles = vec!["intmainreturn0.testnet".to_string()];
+        let contract = Contract::new(oracles);
+        let steps_to_convert:u32 = 10_000;
+        let steps_from_tge:u64 = 10000000000 as u64;
+        
+        println!("{:15}", steps_from_tge);
+
+        let res: U64 = contract.formula(U64(steps_from_tge), steps_to_convert);
+        assert_eq!(U64(9997623477002270720), res);
+        //9997623477002270720
+        //9997623477002270720
+        println!("formula = {}", u64::from(res));
+
+        // near call swt1.intmainreturn000.testnet formula '{"steps_from_tge":"10000000000", "steps": 10000}' --accountId intmainreturn00.testnet --gas=300000000000000
+        // Scheduling a call: swt1.intmainreturn000.testnet.formula({"steps_from_tge":"10000000000", "steps": 10000})
+        // Doing account.functionCall()
+        //9997623477002270720 ✅
+    }
+
+    #[test]
+    fn test_formula3() {
+        let context = get_context(vec![], false);
+        testing_env!(context);
+        let oracles = vec!["intmainreturn0.testnet".to_string()];
+        let contract = Contract::new(oracles);
+        let steps_to_convert:u32 = 10_000;
+        let steps_from_tge:u64 = 100000000000 as u64;
+        
+        println!("{:15}", steps_from_tge);
+
+        let res: U64 = contract.formula(U64(steps_from_tge), steps_to_convert);
+        assert_eq!(U64(9976272879232378880), res);
+        //9976272879232378880
+        //9976272879232378880
+        println!("formula = {}", u64::from(res));
+
+        // near call swt1.intmainreturn000.testnet formula '{"steps_from_tge":"100000000000", "steps": 10000}' --accountId intmainreturn00.testnet --gas=300000000000000
+        // Scheduling a call: swt1.intmainreturn000.testnet.formula({"steps_from_tge":"10000000000", "steps": 10000})
+        // Doing account.functionCall()
+        //9976272879232378880 ✅
+    }
+
+    #[test]
+    fn test_formula4() {
+        let context = get_context(vec![], false);
+        testing_env!(context);
         let oracles = vec!["intmainreturn0.testnet".to_string()];
         let contract = Contract::new(oracles);
 
         let steps_to_convert:u32 = 10_000;
         let steps_from_tge:u64 = 10000000000000 as u64;
         
-        println!("{:15}", steps_from_tge);
-
         let res: U64 = contract.formula(U64(steps_from_tge), steps_to_convert);
-        assert_eq!(U64(7885277331150535680), res);
+        // assert_eq!(U64(9765207431634329600), res);
+        // 7885277331150535680
+        // 7885277331150535680
         println!("formula = {}", u64::from(res));
-
         // near call swt1.intmainreturn000.testnet formula '{"steps_from_tge":"10000000000000", "steps": 10000}' --accountId intmainreturn00.testnet --gas=300000000000000
-        // Scheduling a call: swt1.intmainreturn000.testnet.formula({"steps_from_tge":"10000000000000", "steps": 10000})
-        // Doing account.functionCall()
-        // Transaction Id 3CtEpRHtWo7yskE83u5bRUPLUkHwAidzFGCxvzDG4XJf
-        // To see the transaction in the transaction explorer, please open this url in your browser
-        // https://explorer.testnet.near.org/transactions/3CtEpRHtWo7yskE83u5bRUPLUkHwAidzFGCxvzDG4XJf
-        // '7885282718634203136'
-        //       |
+        // 7885282718634203136 ❌
+    }
 
+    #[test]
+    fn test_formula5() {
+        let context = get_context(vec![], false);
+        testing_env!(context);
+        let oracles = vec!["intmainreturn0.testnet".to_string()];
+        let contract = Contract::new(oracles);
+
+        let steps_to_convert:u32 = 10_000;
+        let steps_from_tge:u64 = 100000000000000 as u64;
+        
+        let res: U64 = contract.formula(U64(steps_from_tge), steps_to_convert);
+        // assert_eq!(U64(929329484048989824), res);
+        // 929329484048989824
+        // 929329484048989824
+        println!("formula = {}", u64::from(res));
+        // near call swt1.intmainreturn000.testnet formula '{"steps_from_tge":"100000000000000", "steps": 10000}' --accountId intmainreturn00.testnet --gas=300000000000000
+        // 929329484048989824 ✅
+    }
+
+    #[test]
+    fn test_formula6() {
+        let context = get_context(vec![], false);
+        testing_env!(context);
+        let oracles = vec!["intmainreturn0.testnet".to_string()];
+        let contract = Contract::new(oracles);
+
+        let steps_to_convert:u32 = 10_000;
+        let steps_from_tge:u64 = 100000000 as u64;
+        
+        let res: U64 = contract.formula(U64(steps_from_tge), steps_to_convert);
+        // assert_eq!(U64(9999977807364481024), res);
+        // 9999977807364481024
+        // 9999977807364481024
+        println!("formula = {}", u64::from(res));
+        // near call swt1.intmainreturn000.testnet formula '{"steps_from_tge":"100000000", "steps": 10000}' --accountId intmainreturn00.testnet --gas=300000000000000
+        // 9999977807364481024 ✅
+    }
+
+    #[test]
+    fn test_formula7() {
+        let context = get_context(vec![], false);
+        testing_env!(context);
+        let oracles = vec!["intmainreturn0.testnet".to_string()];
+        let contract = Contract::new(oracles);
+
+        let steps_to_convert:u32 = 10_000;
+        let steps_from_tge:u64 = 10000000000000 as u64;
+        
+        let res: U64 = contract.formula(U64(steps_from_tge), steps_to_convert);
+        // assert_eq!(U64(), res);
+        // 7885277331150535680
+        // 7885277331150535680
+        println!("formula = {}", u64::from(res));
+        // near call swt1.intmainreturn000.testnet formula '{"steps_from_tge":"10000000000000", "steps": 10000}' --accountId intmainreturn00.testnet --gas=300000000000000
+        // 7885282718634203136 ❌
     }
 }
 
