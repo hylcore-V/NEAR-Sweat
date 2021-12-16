@@ -3,7 +3,7 @@ use near_contract_standards::fungible_token::metadata::{
 };
 use near_contract_standards::fungible_token::FungibleToken;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::json_types::{ValidAccountId, U128};
+use near_sdk::json_types::{ValidAccountId, U64, U128};
 use near_sdk::{near_bindgen, AccountId, PanicOnDefault, PromiseOrValue, env};
 use near_sdk::collections::LookupSet;
 
@@ -18,7 +18,7 @@ const K:f64 = 0.9999999999999762;
 pub struct Contract {
     oracles: LookupSet<AccountId>,
     token: FungibleToken,
-    steps_from_tge: f64,
+    steps_from_tge: U64,
 }
 
 #[near_bindgen]
@@ -33,11 +33,11 @@ impl Contract {
         Self {
             oracles: oracles_tree,
             token: FungibleToken::new(b"t".to_vec()),
-            steps_from_tge: 0.
+            steps_from_tge: U64::from(0)
         }
     }
 
-    pub fn get_steps_from_tge(&self) -> f64 {
+    pub fn get_steps_from_tge(&self) -> U64 {
         return self.steps_from_tge
     }
 
@@ -48,22 +48,23 @@ impl Contract {
         }
     }
 
-    pub fn record(&mut self, account_id: ValidAccountId, steps: u32) -> f64 {
+    pub fn record(&mut self, account_id: ValidAccountId, steps: u32) -> U64 {
         assert_eq!(true, self.oracles.contains(&env::predecessor_account_id()));
         if !self.token.accounts.contains_key(account_id.as_ref()) {
             self.token.internal_register_account(account_id.as_ref());
         }
-        let swt = self.formula(steps);
-        self.token.internal_deposit(account_id.as_ref(), swt as u128);
-        self.steps_from_tge += f64::from(steps);
+        let swt = self.formula(self.steps_from_tge, steps);
+        self.token.internal_deposit(account_id.as_ref(), swt.0 as u128);
+        self.steps_from_tge.0 += steps as u64;
         return swt
     }
 
-    pub fn formula(&self, steps: u32) -> f64 {
-        return (
-            DECIMALS * K.powf(f64::from(steps) + self.steps_from_tge + 1.) - 
-            DECIMALS * K.powf(self.steps_from_tge + 1.)
-        ) / ( K - 1.) / 1000.;
+    pub fn formula(&self, steps_from_tge: U64, steps: u32) -> U64 {
+        let a:f64 = DECIMALS * (K.powf(steps as f64 + steps_from_tge.0 as f64 + 1.));
+        let b:f64 = DECIMALS * (K.powf(steps_from_tge.0 as f64 + 1.));
+        let swt:f64 = (a - b) / ( K - 1.) / 1000.;
+        let res = U64(swt as u64);
+        return res;
     }
 }
 
@@ -75,8 +76,8 @@ impl FungibleTokenMetadataProvider for Contract {
     fn ft_metadata(&self) -> FungibleTokenMetadata {
         FungibleTokenMetadata {
             spec: "ft-1.0".to_string(),
-            name: "SWT (v0.2)".to_string(),
-            symbol: "SWT (v0.2)".to_string(),
+            name: "SWT (v0.3)".to_string(),
+            symbol: "SWT (v0.3)".to_string(),
             icon: Some(String::from(ICON)),
             reference: None,
             reference_hash: None,
@@ -92,7 +93,7 @@ mod tests {
     use super::*;
     use near_sdk::MockedBlockchain;
     use near_sdk::{testing_env, VMContext};
-    use std::convert::TryInto;
+    // use std::convert::TryInto;
 
     fn get_context(input: Vec<u8>, is_view: bool) -> VMContext {
         VMContext {
@@ -115,18 +116,60 @@ mod tests {
         }
     }
 
+    pub fn formula_vanila_rust(steps_from_tge: u64, steps: u32) -> u64 {
+        let a:f64 = DECIMALS * (K.powf(steps as f64 + steps_from_tge as f64 + 1.));
+        let b:f64 = DECIMALS * (K.powf(steps_from_tge as f64 + 1.));
+        let swt:f64 = (a - b) / ( K - 1.) / 1000.;
+        let res = swt as u64;
+        return res;
+    }
+
     #[test]
-    fn test_steps_from_tge() {
+    fn test_formula() {
         let context = get_context(vec![], false);
         testing_env!(context);
         let oracles = vec!["intmainreturn0.testnet".to_string()];
-        let mut contract = Contract::new(oracles);
-        assert_eq!(0., contract.get_steps_from_tge());
-    
-        contract.record("alice.testnet".try_into().unwrap(), 10_000);
-        assert_eq!(10_000., contract.get_steps_from_tge());
+        let contract = Contract::new(oracles);
         
-        contract.record("alice.testnet".try_into().unwrap(), 15_000);
-        assert_eq!(10_000. + 15_000., contract.get_steps_from_tge());
+        let steps_to_convert:u32 = 10_000;    
+        let mut steps_from_tge:u64 = 10000000 as u64; // ~all the time ok
+
+        for number in 1..100 {
+            steps_from_tge += u64::from(steps_to_convert) * number;
+            println!("{}", steps_from_tge);
+            let res_vanila: u64 = formula_vanila_rust(steps_from_tge, steps_to_convert);
+            let res_contract: U64 = contract.formula(U64(steps_from_tge), steps_to_convert);
+            assert_eq!(res_vanila, res_contract.0);
+        }
+    }
+
+    #[test]
+    fn test_formula2() {
+        let context = get_context(vec![], false);
+        testing_env!(context);
+        let oracles = vec!["intmainreturn0.testnet".to_string()];
+        let contract = Contract::new(oracles);
+        
+        let steps_to_convert:u32 = 10_000;    
+        let steps_from_tge:u64 = 10000000000000 as u64;
+
+        println!("{}", steps_from_tge);
+        let res_vanila: u64 = formula_vanila_rust(steps_from_tge, steps_to_convert);
+        let res_contract: U64 = contract.formula(U64(steps_from_tge), steps_to_convert);
+        assert_eq!(res_vanila, res_contract.0);
+        println!("{}", res_contract.0);
+        // 7885277331150535680
+
+        // near call swt1.intmainreturn000.testnet formula '{"steps_from_tge":"10000000000000", "steps": 10000}' --accountId intmainreturn00.testnet --gas=300000000000000
+        // Scheduling a call: swt1.intmainreturn000.testnet.formula({"steps_from_tge":"10000000000000", "steps": 10000})
+        // Doing account.functionCall()
+        // Transaction Id 3BLCa8BgDcj6mrauLrX1YoMjHoSnQfnmwqMiKS3RDLgJ
+        // To see the transaction in the transaction explorer, please open this url in your browser
+        // https://explorer.testnet.near.org/transactions/3BLCa8BgDcj6mrauLrX1YoMjHoSnQfnmwqMiKS3RDLgJ
+        // '7885282718634203136'
+
     }
 }
+
+        
+
