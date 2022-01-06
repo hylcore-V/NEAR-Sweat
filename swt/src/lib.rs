@@ -61,7 +61,7 @@ impl Contract {
         let capped_steps = self.get_capped_steps(&account_id, steps);
         let swt = self.formula(self.steps_from_tge, capped_steps);
         self.token.internal_deposit(account_id.as_ref(), swt.0 as u128);
-        self.steps_from_tge.0 += steps as u64;
+        self.steps_from_tge.0 += capped_steps as u64;
         return swt
     }
 
@@ -263,9 +263,14 @@ mod tests {
         assert_eq!(U64(0), contract.get_steps_from_tge());
         let alice:ValidAccountId = "alice.testnet".try_into().unwrap();
         
-        let mut swt:f64 = contract.record(&alice, 5_000).0 as f64 / DECIMALS;
+        let mut swt:f64 = contract.record(&alice, 10_000).0 as f64 / DECIMALS;
+        assert_eq!(10_000, contract.get_steps_from_tge().0);
         swt += contract.record(&alice, 30_000).0 as f64 / DECIMALS;
-        println!("{} much coins = {:.1}", if swt > 0.01 {"🪙"} else {"⛔️"}, swt);
+        swt += contract.record(&alice, 30_000).0 as f64 / DECIMALS;
+        swt += contract.record(&alice, 30_000).0 as f64 / DECIMALS;
+        // println!("{} much coins = {:.1}", if swt > 0.01 {"🪙"} else {"⛔️"}, swt);
+        assert_eq!(20_000, contract.get_steps_from_tge().0);
+
     }
 }
 
