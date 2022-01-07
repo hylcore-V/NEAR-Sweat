@@ -53,8 +53,8 @@ impl Contract {
         }
     }
 
+    #[private]
     pub fn record(&mut self, account_id: &ValidAccountId, steps: u32) -> U128 {
-        assert_eq!(true, self.oracles.contains(&env::predecessor_account_id()));
         if !self.token.accounts.contains_key(account_id.as_ref()) {
             self.token.internal_register_account(account_id.as_ref());
         }
