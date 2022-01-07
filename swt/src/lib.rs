@@ -176,7 +176,7 @@ mod tests {
         testing_env!(context);
         println!("test_formula2: =====================================");
         {
-            let alice:AccountId = "alice.testnet".try_into().unwrap();
+            let alice:AccountId = "alice.testnet".parse().unwrap();
             let steps_from_tge = vec!(0, 2_000, 10_000, 100_000, 1_000_000, 1_500_500, 2_000_000, 2_500_000, 10_000_000, 50_000_000, 1_000_000_000, 1_000_000_000_000_000_000, 1_000_000_000_000_000_000_000u128);
             for tge in steps_from_tge {
                 let oracles = vec!["intmainreturn0.testnet".to_string()];
