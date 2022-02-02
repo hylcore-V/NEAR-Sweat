@@ -57,26 +57,29 @@ impl Contract {
     }
 
     pub fn formula(&self, steps_from_tge: U64, steps: u32) -> U128 {
-        let trl = (steps_from_tge.0 as f64/ 1e+12).floor() as usize;
-        if trl < 400 {
-            let trl2 = ((steps_from_tge.0 as f64 + steps as f64) / 1e+12).floor() as usize;
-            if trl != trl2 {
-                // two lines
-                let middle = (trl2 as f64) * 1e+12;
-                let swt1 = constants::calculate_square_under_line(constants::KS[trl], constants::BS[trl], steps_from_tge.0 as f64, middle);
-                let swt2 = constants::calculate_square_under_line(constants::KS[trl2], constants::BS[trl2], middle, middle + steps as f64);
-                return U128(((swt1 + swt2) * constants::DECIMALS) as u128);
+        let mut tokens: u128 = 0;
+        let mut steps_to_exchange_var = steps as f64;
+        let mut steps_from_tge_var = steps_from_tge.0 as f64;
+        let trl_start = (steps_from_tge_var / 1e+12).floor() as usize;
+        let trl_end = ((steps_from_tge_var + steps_to_exchange_var as f64)/ 1e+12).floor() as usize;
+
+
+        for trl in trl_start..trl_end + 1 {
+            let steps_for_current_line = f64::min(steps_to_exchange_var, (trl as f64 + 1.) * 1e+12 - steps_from_tge_var);
+            if trl < 400 {
+                tokens += (constants::area_under_line(
+                    constants::KS[trl], 
+                    constants::BS[trl], 
+                    steps_from_tge_var, 
+                    steps_from_tge_var + steps_for_current_line
+                ) * (constants::DECIMALS as f64)) as u128
             } else {
-                // one line 
-                let swt = constants::calculate_square_under_line(constants::KS[trl], constants::BS[trl], steps_from_tge.0 as f64, steps_from_tge.0 as f64 + steps as f64);
-                return U128((swt * constants::DECIMALS) as u128);
+                tokens = tokens + (constants::formula_lin2(steps_from_tge_var, steps_for_current_line) * constants::DECIMALS) as u128;
             }
-        } else {
-            let a: f64 = constants::DECIMALS * (constants::K.powf(steps as f64 + steps_from_tge.0 as f64 + 1.));
-            let b: f64 = constants::DECIMALS * (constants::K.powf(steps_from_tge.0 as f64 + 1.));
-            let swt: f64 = (a - b) / (constants::K - 1.) / 1000.;
-            return U128(swt as u128)
-        }        
+            steps_from_tge_var += steps_for_current_line;
+            steps_to_exchange_var -= steps_for_current_line;
+        }
+        return U128(tokens)
     }
 
     fn get_capped_steps(&mut self, account_id: &AccountId, steps_to_convert: u32) -> u32 {
@@ -128,22 +131,24 @@ mod tests {
     }
 
     #[test]
-    fn test_daily_cap1() {
+    fn formula() {
         let oracles = vec!["intmainreturn0.testnet".parse().unwrap()];
         let mut contract = Contract::new(oracles);
         assert_eq!(U64(0), contract.get_steps_from_tge());
         let alice: AccountId = "alice.testnet".parse().unwrap();
         
-        // constants::BS.len();
-        // for i in 0..constants::BS.len(){
-        //     print!("{}, ", constants::BS[i]);
-        // }
-        let steps_to_convert = vec!(1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000);
-        let res = vec!(0.0, 0.008999999999991565, 0.09899999999914803, 0.998999999914795, 9.998999991479492, 99.99899914794923, 999.9989147949235, 9999.990479492355, 99999.14694923519);
-        
-        for i in 0..steps_to_convert.len() - 1 {
-            let diff = contract.formula(U64(1), steps_to_convert[i]).0 as f64 / constants::DECIMALS - res[i];
-            println!("{} {} {}", res[i], contract.formula(U64(1), steps_to_convert[i]).0 as f64 / constants::DECIMALS, diff.abs());
+        let steps_to_convert = vec!(1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000);
+        let steps_from_tge = vec!(1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000, 10000000000, 100000000000, 1000000000000, 10000000000000, 100000000000000, 1000000000000000u64, 999999999000);
+
+        let mut test_number = 0;
+        for tge in 0..steps_from_tge.len() {
+            for steps in 0..steps_to_convert.len() {
+                let formula_res = contract.formula(U64(steps_from_tge[tge]), steps_to_convert[steps]).0 as f64 / constants::DECIMALS;
+                let diff = formula_res - constants::TEST_RESULTS[test_number];
+                println!("{} {} {} {} {}", steps_from_tge[tge], steps_to_convert[steps], constants::TEST_RESULTS[test_number], formula_res, diff.abs());
+                test_number = test_number + 1;
+            }
+            println!()
         }
     }
 
