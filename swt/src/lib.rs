@@ -5,9 +5,10 @@ use near_contract_standards::fungible_token::FungibleToken;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{LookupMap, LookupSet};
 use near_sdk::json_types::{U128, U64};
-use near_sdk::{env, near_bindgen, AccountId, PanicOnDefault, PromiseOrValue};
 mod constants;
 mod math;
+
+use near_sdk::{env, near_bindgen, AccountId, Balance, PanicOnDefault, PromiseOrValue};
 
 #[near_bindgen]
 #[derive(BorshSerialize, BorshDeserialize, PanicOnDefault)]
@@ -43,20 +44,19 @@ impl Contract {
         assert!(self.oracles.contains(&env::predecessor_account_id()));
         let mut oracle_fee = 0f64;
         for (account_id, steps) in steps_batch.into_iter() {
-            if !self.token.accounts.contains_key(&account_id) {
-                self.token.internal_register_account(&account_id);
-            }
             let capped_steps = self.get_capped_steps(&account_id, steps);
             let sweat_to_mint = self.formula(self.steps_from_tge, capped_steps);
             let trx_oracle_fee = sweat_to_mint.0 as f64 * 0.05;
             let minted_to_user = sweat_to_mint.0 as f64 - trx_oracle_fee;
             oracle_fee = oracle_fee + trx_oracle_fee;
-            self.token
-                .internal_deposit(&account_id, minted_to_user as u128);
+            internal_deposit(&mut self.token, &account_id, minted_to_user as u128);
             self.steps_from_tge.0 += capped_steps as u64;
         }
-        self.token
-            .internal_deposit(&env::predecessor_account_id(), oracle_fee as u128);
+        internal_deposit(
+            &mut self.token,
+            &env::predecessor_account_id(),
+            oracle_fee as u128,
+        );
     }
 
     pub fn formula(&self, steps_from_tge: U64, steps: u32) -> U128 {
@@ -85,6 +85,21 @@ impl Contract {
 
 near_contract_standards::impl_fungible_token_core!(Contract, token);
 near_contract_standards::impl_fungible_token_storage!(Contract, token);
+
+/// Taken from contract standards but modified to default if account isn't initialized
+/// rather than panicking:
+/// <https://github.com/near/near-sdk-rs/blob/6596dc311036fe51d94358ac8f6497ef6e5a7cfc/near-contract-standards/src/fungible_token/core_impl.rs#L105>
+fn internal_deposit(token: &mut FungibleToken, account_id: &AccountId, amount: Balance) {
+    let balance = token.accounts.get(account_id).unwrap_or_default();
+    let new_balance = balance
+        .checked_add(amount)
+        .unwrap_or_else(|| env::panic_str("Balance overflow"));
+    token.accounts.insert(account_id, &new_balance);
+    token.total_supply = token
+        .total_supply
+        .checked_add(amount)
+        .unwrap_or_else(|| env::panic_str("Total supply overflow"));
+}
 
 #[near_bindgen]
 impl FungibleTokenMetadataProvider for Contract {
