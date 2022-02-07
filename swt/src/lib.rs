@@ -42,21 +42,17 @@ impl Contract {
 
     pub fn record_batch(&mut self, steps_batch: Vec<(AccountId, u32)>) {
         assert!(self.oracles.contains(&env::predecessor_account_id()));
-        let mut oracle_fee = 0f64;
+        let mut oracle_fee: u128 = 0;
         for (account_id, steps) in steps_batch.into_iter() {
             let capped_steps = self.get_capped_steps(&account_id, steps);
-            let sweat_to_mint = self.formula(self.steps_from_tge, capped_steps);
-            let trx_oracle_fee = sweat_to_mint.0 as f64 * 0.05;
-            let minted_to_user = sweat_to_mint.0 as f64 - trx_oracle_fee;
+            let sweat_to_mint: u128 = self.formula(self.steps_from_tge, capped_steps).0;
+            let trx_oracle_fee: u128 = sweat_to_mint * 5 / 100;
+            let minted_to_user: u128 = sweat_to_mint - trx_oracle_fee;
             oracle_fee = oracle_fee + trx_oracle_fee;
-            internal_deposit(&mut self.token, &account_id, minted_to_user as u128);
+            internal_deposit(&mut self.token, &account_id, minted_to_user);
             self.steps_from_tge.0 += capped_steps as u64;
         }
-        internal_deposit(
-            &mut self.token,
-            &env::predecessor_account_id(),
-            oracle_fee as u128,
-        );
+        internal_deposit(&mut self.token, &env::predecessor_account_id(), oracle_fee);
     }
 
     pub fn formula(&self, steps_from_tge: U64, steps: u32) -> U128 {
