@@ -489,11 +489,13 @@ dependencies = [
 
 [[package]]
 name = "near-contract-standards"
-version = "4.0.0-pre.5"
+version = "4.0.0-pre.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4844414401d8882c2217827ed4fd11f6370a1186ac8a9e8073fe23287a266851"
+checksum = "52c4f636adbffbd9399610cb6445894c64c6c8fcf9ea4e607021f252a1e0459f"
 dependencies = [
  "near-sdk",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -601,9 +603,9 @@ dependencies = [
 
 [[package]]
 name = "near-sdk"
-version = "4.0.0-pre.5"
+version = "4.0.0-pre.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37874b631f47ce76e1fdddeaad8314529384d9d150578fd42ad77b312cf739d6"
+checksum = "a4f17c763e91999827a2ad30b909f79e82a56c448bf7170ed72841756397e5a3"
 dependencies = [
  "base64 0.13.0",
  "borsh",
@@ -619,9 +621,9 @@ dependencies = [
 
 [[package]]
 name = "near-sdk-macros"
-version = "4.0.0-pre.5"
+version = "4.0.0-pre.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87ade9707ad0c0b977f524064f4602705e6f49d693a7b106277c13e4e68fe4f9"
+checksum = "1d07b8d59302bf900707c41654a7ba178c5a2d8040a8812647f6b7e7e28dc5b1"
 dependencies = [
  "Inflector",
  "proc-macro2",
