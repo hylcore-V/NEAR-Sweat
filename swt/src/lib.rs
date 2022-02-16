@@ -116,7 +116,41 @@ impl FungibleTokenMetadataProvider for Contract {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use near_sdk::test_utils::{accounts, VMContextBuilder};
     const EPS: f64 = 0.00001;
+    use near_sdk::testing_env;
+    fn get_context(predecessor_account_id: AccountId) -> VMContextBuilder {
+        let mut builder = VMContextBuilder::new();
+        builder
+            .current_account_id(accounts(0))
+            .signer_account_id(predecessor_account_id.clone())
+            .predecessor_account_id(predecessor_account_id)
+            .attached_deposit(1);
+        builder
+    }
+
+    #[test]
+    fn oracle_fee_test() {
+        let context = get_context(accounts(0));
+        testing_env!(context.build());
+        let oracles = vec![accounts(0)];
+        let mut contract = Contract::new(oracles);
+        assert_eq!(U64(0), contract.get_steps_from_tge());
+        contract.record_batch(vec![(accounts(1), 10_000), (accounts(2), 10_000)]);
+        assert_eq!(
+            true,
+            (1. - contract.token.ft_balance_of(accounts(0)).0 as f64 / 1e+18).abs() < EPS
+        );
+        assert_eq!(
+            true,
+            (9.5 - contract.token.ft_balance_of(accounts(1)).0 as f64 / 1e+18).abs() < EPS
+        );
+        assert_eq!(
+            true,
+            (9.5 - contract.token.ft_balance_of(accounts(2)).0 as f64 / 1e+18).abs() < EPS
+        );
+        assert_eq!(U64(2 * 10_000), contract.get_steps_from_tge());
+    }
 
     #[test]
     fn formula_test() {
