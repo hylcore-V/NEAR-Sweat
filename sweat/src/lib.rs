@@ -102,8 +102,8 @@ impl FungibleTokenMetadataProvider for Contract {
     fn ft_metadata(&self) -> FungibleTokenMetadata {
         FungibleTokenMetadata {
             spec: "ft-1.0".to_string(),
-            name: "SWT (v0.3)".to_string(),
-            symbol: "SWT (v0.3)".to_string(),
+            name: "SWEAT".to_string(),
+            symbol: "SWEAT".to_string(),
             icon: Some(String::from(constants::ICON)),
             reference: None,
             reference_hash: None,
