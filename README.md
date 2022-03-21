@@ -10,6 +10,8 @@
 ```shell
 ### run unit tests
 cargo test -- --nocapture
+### add target
+rustup target add wasm32-unknown-unknown
 ## compile to wasm
 ./sweat/build.sh
 ```
