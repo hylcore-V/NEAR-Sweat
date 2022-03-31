@@ -1,3 +1,4 @@
+use near_contract_standards::fungible_token::events::FtMint;
 use near_contract_standards::fungible_token::metadata::{
     FungibleTokenMetadata, FungibleTokenMetadataProvider,
 };
@@ -95,6 +96,12 @@ fn internal_deposit(token: &mut FungibleToken, account_id: &AccountId, amount: B
         .total_supply
         .checked_add(amount)
         .unwrap_or_else(|| env::panic_str("Total supply overflow"));
+    FtMint {
+        owner_id: account_id,
+        amount: &U128(amount),
+        memo: None,
+    }
+    .emit()
 }
 
 #[near_bindgen]
