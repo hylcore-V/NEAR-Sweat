@@ -2,15 +2,12 @@
 name = "sweat"
 version = "0.1.0"
 authors = []
-edition = "2018"
+edition = "2021"
 publish = false
 
 [lib]
 crate-type = ["cdylib"]
 
-
 [dependencies]
-# near-sdk = { git = "https://github.com/near/near-sdk-rs", rev = "9d99077" }
-# near-contract-standards = { git = "https://github.com/near/near-sdk-rs", rev = "9d99077" }
 near-sdk = "4.0.0-pre.7"
 near-contract-standards = "4.0.0-pre.7"
