@@ -36,6 +36,11 @@ impl Contract {
             daily_limits: LookupMap::new(b"l"),
         }
     }
+    pub fn mint_tge(&mut self, amount: U128, account_for: AccountId) {
+        assert!(self.oracles.contains(&env::predecessor_account_id()));
+        self.token.internal_register_account(&account_for);
+        internal_deposit(&mut self.token, &env::predecessor_account_id(), amount.0);
+    }
 
     pub fn get_steps_from_tge(&self) -> U64 {
         self.steps_from_tge
