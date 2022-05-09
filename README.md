@@ -11,8 +11,15 @@
 ```shell
 ### run unit tests
 cargo test -- --nocapture
-### add target
-rustup target add wasm32-unknown-unknown
+
+### run workspace tests
+cargo run --example mint
+cargo run --example transfer
+cargo run --example formula
+###### if thats not works, try:
+softwareupdate --install-rosetta
+rustup default stable-x86_64-apple-darwin
+
 ## compile to wasm
 ./sweat/build.sh
 ```
