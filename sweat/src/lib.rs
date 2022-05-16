@@ -17,7 +17,7 @@ pub struct Contract {
     oracles: LookupSet<AccountId>,
     token: FungibleToken,
     steps_from_tge: U64,
-    daily_limits: LookupMap<AccountId, (u32, u64)>,
+    daily_limits: LookupMap<AccountId, (u16, u64)>,
 }
 
 #[near_bindgen]
@@ -46,12 +46,12 @@ impl Contract {
         self.steps_from_tge
     }
 
-    pub fn record_batch(&mut self, steps_batch: Vec<(AccountId, u32)>) {
+    pub fn record_batch(&mut self, steps_batch: Vec<(AccountId, u16)>) {
         assert!(self.oracles.contains(&env::predecessor_account_id()));
         let mut oracle_fee: u128 = 0;
         for (account_id, steps) in steps_batch.into_iter() {
             let capped_steps = self.get_capped_steps(&account_id, steps);
-            let sweat_to_mint: u128 = self.formula(self.steps_from_tge, capped_steps).0;
+            let sweat_to_mint: u128 = self.formula(self.steps_from_tge, capped_steps as u32).0;
             let trx_oracle_fee: u128 = sweat_to_mint * 5 / 100;
             let minted_to_user: u128 = sweat_to_mint - trx_oracle_fee;
             oracle_fee = oracle_fee + trx_oracle_fee;
@@ -65,20 +65,19 @@ impl Contract {
         U128(math::formula(steps_from_tge.0 as f64, steps as f64))
     }
 
-    fn get_capped_steps(&mut self, account_id: &AccountId, steps_to_convert: u32) -> u32 {
+    fn get_capped_steps(&mut self, account_id: &AccountId, steps_to_convert: u16) -> u16 {
         let (mut sum, mut ts) = self.daily_limits.get(account_id).unwrap_or((0, 0));
         let current_ts: u64 = env::block_timestamp();
         const DAY_IN_NANOS: u64 = 86_400_000_000_000;
-        const DAILY_STEP_CONVERSION_LIMIT: u32 = 10_000;
+        const DAILY_STEP_CONVERSION_LIMIT: u16 = 10_000;
         let mut remaining_steps = 2 * DAILY_STEP_CONVERSION_LIMIT;
         if ts == 0 || current_ts - ts >= DAY_IN_NANOS {
             ts = current_ts;
             sum = 0;
         }
 
-        // TODO can either variable cross u32 bounds? Cast will overflow
-        remaining_steps = i32::max(0, remaining_steps as i32 - sum as i32) as u32;
-        let capped_steps: u32 = u32::min(remaining_steps, steps_to_convert);
+        remaining_steps = i16::max(0, remaining_steps as i16 - sum as i16) as u16;
+        let capped_steps: u16 = u16::min(remaining_steps, steps_to_convert);
         self.daily_limits
             .insert(account_id, &(sum + capped_steps, ts));
         capped_steps
