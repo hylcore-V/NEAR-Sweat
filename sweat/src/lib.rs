@@ -1,3 +1,4 @@
+use near_contract_standards::fungible_token::events::FtBurn;
 use near_contract_standards::fungible_token::events::FtMint;
 use near_contract_standards::fungible_token::metadata::{
     FungibleTokenMetadata, FungibleTokenMetadataProvider,
@@ -6,7 +7,6 @@ use near_contract_standards::fungible_token::FungibleToken;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{LookupMap, LookupSet};
 use near_sdk::json_types::{U128, U64};
-mod constants;
 mod math;
 
 use near_sdk::{env, near_bindgen, AccountId, Balance, PanicOnDefault, PromiseOrValue};
@@ -40,6 +40,17 @@ impl Contract {
         assert!(self.oracles.contains(&env::predecessor_account_id()));
         self.token.internal_register_account(&account_for);
         internal_deposit(&mut self.token, &env::predecessor_account_id(), amount.0);
+    }
+
+    pub fn burn(&mut self, amount: &U128) {
+        self.token
+            .internal_withdraw(&env::predecessor_account_id(), amount.0);
+        FtBurn {
+            owner_id: &env::predecessor_account_id(),
+            amount: amount,
+            memo: None,
+        }
+        .emit()
     }
 
     pub fn get_steps_from_tge(&self) -> U64 {
@@ -108,6 +119,8 @@ fn internal_deposit(token: &mut FungibleToken, account_id: &AccountId, amount: B
     .emit()
 }
 
+pub const ICON: &str = "data:image/svg+xml,%3Csvg viewBox='0 0 100 100' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100' height='100' rx='50' fill='%23FF0D75'/%3E%3Cg clip-path='url(%23clip0_283_2788)'%3E%3Cpath d='M39.4653 77.5455L19.0089 40.02L35.5411 22.2805L55.9975 59.806L39.4653 77.5455Z' stroke='white' stroke-width='10'/%3E%3Cpath d='M66.0253 77.8531L45.569 40.3276L62.1012 22.5882L82.5576 60.1136L66.0253 77.8531Z' stroke='white' stroke-width='10'/%3E%3C/g%3E%3Cdefs%3E%3CclipPath id='clip0_283_2788'%3E%3Crect width='100' height='56' fill='white' transform='translate(0 22)'/%3E%3C/clipPath%3E%3C/defs%3E%3C/svg%3E%0A";
+
 #[near_bindgen]
 impl FungibleTokenMetadataProvider for Contract {
     fn ft_metadata(&self) -> FungibleTokenMetadata {
@@ -115,249 +128,10 @@ impl FungibleTokenMetadataProvider for Contract {
             spec: "ft-1.0".to_string(),
             name: "SWEAT".to_string(),
             symbol: "SWEAT".to_string(),
-            icon: Some(String::from(constants::ICON)),
+            icon: Some(String::from(ICON)),
             reference: None,
             reference_hash: None,
             decimals: 18,
         }
     }
-}
-
-// :TODO: workspaces tests
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use near_sdk::test_utils::{accounts, VMContextBuilder};
-    const EPS: f64 = 0.00001;
-    use near_sdk::testing_env;
-    fn get_context(predecessor_account_id: AccountId) -> VMContextBuilder {
-        let mut builder = VMContextBuilder::new();
-        builder
-            .current_account_id(accounts(0))
-            .signer_account_id(predecessor_account_id.clone())
-            .predecessor_account_id(predecessor_account_id)
-            .attached_deposit(1);
-        builder
-    }
-
-    #[test]
-    fn oracle_fee_test() {
-        let context = get_context(accounts(0));
-        testing_env!(context.build());
-        let oracles = vec![accounts(0)];
-        let mut contract = Contract::new(oracles);
-        assert_eq!(U64(0), contract.get_steps_from_tge());
-        contract.record_batch(vec![(accounts(1), 10_000), (accounts(2), 10_000)]);
-        assert_eq!(
-            true,
-            (1. - contract.token.ft_balance_of(accounts(0)).0 as f64 / 1e+18).abs() < EPS
-        );
-        assert_eq!(
-            true,
-            (9.5 - contract.token.ft_balance_of(accounts(1)).0 as f64 / 1e+18).abs() < EPS
-        );
-        assert_eq!(
-            true,
-            (9.5 - contract.token.ft_balance_of(accounts(2)).0 as f64 / 1e+18).abs() < EPS
-        );
-        assert_eq!(U64(2 * 10_000), contract.get_steps_from_tge());
-    }
-
-    #[test]
-    fn formula_test() {
-        let oracles = vec!["intmainreturn0.testnet".parse().unwrap()];
-        let contract = Contract::new(oracles);
-        assert_eq!(U64(0), contract.get_steps_from_tge());
-
-        let steps_to_convert = vec![
-            1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000,
-        ];
-        let steps_from_tge = vec![
-            1,
-            10,
-            100,
-            1000,
-            10000,
-            100000,
-            1000000,
-            10000000,
-            100000000,
-            1000000000,
-            10000000000,
-            100000000000,
-            1000000000000,
-            10000000000000,
-            100000000000000,
-            1000000000000000u64,
-            999999999000,
-        ];
-        let mut test_number = 0;
-        for tge in 0..steps_from_tge.len() {
-            for steps in 0..steps_to_convert.len() {
-                let formula_res = contract
-                    .formula(U64(steps_from_tge[tge]), steps_to_convert[steps])
-                    .0 as f64
-                    / 1e+18;
-                let diff = formula_res - TEST_RESULTS[test_number];
-                assert_eq!(true, diff.abs() < EPS);
-                test_number = test_number + 1;
-            }
-        }
-    }
-
-    pub const TEST_RESULTS: [f64; 153] = [
-        0.0009999999999997387,
-        0.009999999999989545,
-        0.09999999999911131,
-        0.9999999999126997,
-        9.999999991285653,
-        99.99999912872224,
-        999.9999128737927,
-        9999.991287394952,
-        99999.12873965199,
-        0.0009999999999981703,
-        0.009999999999973861,
-        0.09999999999895448,
-        0.9999999999111314,
-        9.999999991269972,
-        99.99999912856542,
-        999.9999128722244,
-        9999.99128737927,
-        99999.12873949517,
-        0.0009999999999824878,
-        0.009999999999817035,
-        0.09999999999738622,
-        0.9999999998954487,
-        9.999999991113144,
-        99.99999912699715,
-        999.9999128565418,
-        9999.991287222441,
-        99999.1287379269,
-        0.0009999999998256607,
-        0.009999999998248767,
-        0.09999999998170353,
-        0.9999999997386219,
-        9.999999989544875,
-        99.99999911131447,
-        999.9999126997149,
-        9999.991285654174,
-        99999.12872224422,
-        0.0009999999982573922,
-        0.009999999982566081,
-        0.09999999982487667,
-        0.9999999981703533,
-        9.99999997386219,
-        99.99999895448761,
-        999.9999111314463,
-        9999.991269971488,
-        99999.12856541736,
-        0.0009999999825747062,
-        0.00999999982573922,
-        0.09999999825660807,
-        0.9999999824876673,
-        9.99999981703533,
-        99.99999738621901,
-        999.9998954487603,
-        9999.991113144628,
-        99999.12699714876,
-        0.0009999998257478467,
-        0.009999998257470626,
-        0.09999998257392213,
-        0.9999998256608078,
-        9.999998248766735,
-        99.99998170353305,
-        999.9997386219009,
-        9999.989544876033,
-        99999.1113144628,
-        0.0009999982574792517,
-        0.009999982574784676,
-        0.09999982574706262,
-        0.9999982573922128,
-        9.999982566080785,
-        99.99982487667356,
-        999.9981703533058,
-        9999.973862190083,
-        99998.9544876033,
-        0.0009999825747933012,
-        0.009999825747925172,
-        0.09999825747846758,
-        0.9999825747062624,
-        9.999825739221281,
-        99.9982566080785,
-        999.9824876673554,
-        9999.817035330578,
-        99997.38621900826,
-        0.0009998257479337971,
-        0.009998257479330131,
-        0.09998257479251717,
-        0.9998257478467583,
-        9.998257470626239,
-        99.9825739221281,
-        999.8256608078512,
-        9998.248766735538,
-        99981.70353305785,
-        0.0009982574793387558,
-        0.009982574793379717,
-        0.09982574793301303,
-        0.9982574792517169,
-        9.982574784675826,
-        99.82574706262396,
-        998.2573922128099,
-        9982.566080785124,
-        99824.87667355372,
-        0.0009825747933883426,
-        0.009825747933875585,
-        0.09825747933797171,
-        0.9825747933013037,
-        9.825747925171694,
-        98.25747846758264,
-        982.5747062623967,
-        9825.739221280992,
-        98256.60807851239,
-        0.0008257479338842365,
-        0.00825747933883687,
-        0.08257479338781916,
-        0.8257479338232387,
-        8.257479332737093,
-        82.5747927778415,
-        825.7478728254714,
-        8257.473232960365,
-        82574.18280016878,
-        0.00032230806451611884,
-        0.003223080645160268,
-        0.03223080645151066,
-        0.32230806450590477,
-        3.223080644138863,
-        32.23080634937016,
-        322.3080542918551,
-        3223.0796227338956,
-        32230.704208873405,
-        4.541613636363615e-05,
-        0.0004541613636363422,
-        0.0045416136363614894,
-        0.04541613636342166,
-        0.45416136361489273,
-        4.541613634216543,
-        45.41613614892703,
-        454.1613421654302,
-        4541.611489270292,
-        4.741577501003273e-06,
-        4.739512354008062e-05,
-        0.00047393471422484454,
-        0.004739338881660464,
-        0.047393368165134696,
-        0.473933648608995,
-        4.739336490220244,
-        47.393364695687744,
-        473.9336257065148,
-        0.0008257479340584625,
-        0.008257479340576784,
-        0.08257479340498369,
-        0.8257479339714235,
-        8.257479333984337,
-        82.57479279007933,
-        825.7478729476152,
-        8257.473234181569,
-        82574.18281238058,
-    ];
 }
