@@ -5,7 +5,7 @@ use near_contract_standards::fungible_token::metadata::{
 };
 use near_contract_standards::fungible_token::FungibleToken;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::{LookupMap, LookupSet};
+use near_sdk::collections::{LookupMap, UnorderedSet};
 use near_sdk::json_types::{U128, U64};
 mod math;
 
@@ -14,7 +14,7 @@ use near_sdk::{env, near_bindgen, AccountId, Balance, PanicOnDefault, PromiseOrV
 #[near_bindgen]
 #[derive(BorshSerialize, BorshDeserialize, PanicOnDefault)]
 pub struct Contract {
-    oracles: LookupSet<AccountId>,
+    oracles: UnorderedSet<AccountId>,
     token: FungibleToken,
     steps_from_tge: U64,
     daily_limits: LookupMap<AccountId, (u16, u64)>,
@@ -25,7 +25,7 @@ impl Contract {
     #[init]
     pub fn new() -> Self {
         Self {
-            oracles: LookupSet::new(b"s"),
+            oracles: UnorderedSet::new(b"s"),
             token: FungibleToken::new(b"t"),
             steps_from_tge: U64::from(0),
             daily_limits: LookupMap::new(b"l"),
@@ -41,6 +41,10 @@ impl Contract {
     pub fn remove_oracle(&mut self, account_id: &AccountId) {
         assert_eq!(env::predecessor_account_id(), env::current_account_id());
         self.oracles.remove(account_id);
+    }
+
+    pub fn get_oracles(&self) -> Vec<AccountId> {
+        self.oracles.to_vec()
     }
 
     pub fn mint_tge(&mut self, amount: U128, account_for: AccountId) {
