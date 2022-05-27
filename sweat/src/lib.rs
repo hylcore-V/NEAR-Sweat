@@ -23,19 +23,26 @@ pub struct Contract {
 #[near_bindgen]
 impl Contract {
     #[init]
-    pub fn new(oracles_vec: Vec<AccountId>) -> Self {
-        let mut oracles_tree = LookupSet::new(b"s");
-        for oracle in oracles_vec.iter() {
-            env::log_str(oracle.as_str());
-            oracles_tree.insert(oracle);
-        }
+    pub fn new() -> Self {
         Self {
-            oracles: oracles_tree,
+            oracles: LookupSet::new(b"s"),
             token: FungibleToken::new(b"t"),
             steps_from_tge: U64::from(0),
             daily_limits: LookupMap::new(b"l"),
         }
     }
+    #[private]
+    pub fn add_oracle(&mut self, account_id: &AccountId) {
+        assert_eq!(env::predecessor_account_id(), env::current_account_id());
+        self.oracles.insert(account_id);
+    }
+
+    #[private]
+    pub fn remove_oracle(&mut self, account_id: &AccountId) {
+        assert_eq!(env::predecessor_account_id(), env::current_account_id());
+        self.oracles.remove(account_id);
+    }
+
     pub fn mint_tge(&mut self, amount: U128, account_for: AccountId) {
         assert!(self.oracles.contains(&env::predecessor_account_id()));
         self.token.internal_register_account(&account_for);
@@ -62,7 +69,7 @@ impl Contract {
         let mut oracle_fee: u128 = 0;
         for (account_id, steps) in steps_batch.into_iter() {
             let capped_steps = self.get_capped_steps(&account_id, steps);
-            let sweat_to_mint: u128 = self.formula(self.steps_from_tge, capped_steps as u32).0;
+            let sweat_to_mint: u128 = self.formula(self.steps_from_tge, capped_steps).0;
             let trx_oracle_fee: u128 = sweat_to_mint * 5 / 100;
             let minted_to_user: u128 = sweat_to_mint - trx_oracle_fee;
             oracle_fee = oracle_fee + trx_oracle_fee;
@@ -72,7 +79,7 @@ impl Contract {
         internal_deposit(&mut self.token, &env::predecessor_account_id(), oracle_fee);
     }
 
-    pub fn formula(&self, steps_from_tge: U64, steps: u32) -> U128 {
+    pub fn formula(&self, steps_from_tge: U64, steps: u16) -> U128 {
         U128(math::formula(steps_from_tge.0 as f64, steps as f64))
     }
 
