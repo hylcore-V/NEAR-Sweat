@@ -15,11 +15,12 @@ async fn main() -> anyhow::Result<()> {
     let contract = worker.dev_deploy(&wasm).await?;
     let oracle1 = worker.dev_create_account().await?;
     let oracle2 = worker.dev_create_account().await?;
+    let user = worker.dev_create_account().await?;
 
     let result = contract
         .call(&worker, "new")
         .args_json(json!({
-                "oracles_vec": vec![oracle1.id(), oracle2.id(), contract.id()],
+                "oracles_vec": vec![oracle1.id(), oracle2.id()],
         }))?
         .transact()
         .await?;
@@ -47,13 +48,23 @@ async fn main() -> anyhow::Result<()> {
     assert_eq!(result, U128(9999999991287398400));
 
     let result = contract
-        .call(&worker, "record_batch")
+        .call(&worker, "add_oracle")
         .args_json(json!({
-            "steps_batch": vec![(oracle1.id(), 10_000u32)],
+            "account_id": oracle1.id(),
         }))?
         .transact()
         .await?;
-    println!("{:#?}", result);
+    println!("add_oracle: {:#?}", result);
+
+    let result = oracle1
+        .call(&worker, contract.id(), "record_batch")
+        .args_json(json!({
+            "steps_batch": vec![(user.id(), 10_000u32)],
+        }))?
+        .transact()
+        .await?;
+
+    println!("record_batch: {:#?}", result);
 
     let result = contract
         .view(
@@ -67,23 +78,21 @@ async fn main() -> anyhow::Result<()> {
         )
         .await?
         .json::<U128>()?;
-    assert_eq!(result, U128(9499999991723028480));
-    assert_eq!(result, U128(9999999991287398400 * 95 / 100));
+    assert_eq!(result, U128(9999999991287398400 * 5 / 100));
 
     let result = contract
         .view(
             &worker,
             "ft_balance_of",
             json!({
-                "account_id": contract.id(),
+                "account_id": user.id(),
             })
             .to_string()
             .into_bytes(),
         )
         .await?
         .json::<U128>()?;
-    assert_eq!(result, U128(499999999564369920));
-    assert_eq!(result, U128(9999999991287398400 * 5 / 100));
+    assert_eq!(result, U128(9999999991287398400 * 95 / 100));
 
     let result = worker
         .view(contract.id(), "get_steps_from_tge", Vec::new())

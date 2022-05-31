@@ -1,11 +1,10 @@
-use near_contract_standards::fungible_token::events::FtBurn;
-use near_contract_standards::fungible_token::events::FtMint;
+use near_contract_standards::fungible_token::events::{FtBurn, FtMint};
 use near_contract_standards::fungible_token::metadata::{
     FungibleTokenMetadata, FungibleTokenMetadataProvider,
 };
 use near_contract_standards::fungible_token::FungibleToken;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::{LookupMap, UnorderedSet};
+use near_sdk::collections::UnorderedSet;
 use near_sdk::json_types::{U128, U64};
 mod math;
 
@@ -17,7 +16,6 @@ pub struct Contract {
     oracles: UnorderedSet<AccountId>,
     token: FungibleToken,
     steps_from_tge: U64,
-    daily_limits: LookupMap<AccountId, (u16, u64)>,
 }
 
 #[near_bindgen]
@@ -28,7 +26,6 @@ impl Contract {
             oracles: UnorderedSet::new(b"s"),
             token: FungibleToken::new(b"t"),
             steps_from_tge: U64::from(0),
-            daily_limits: LookupMap::new(b"l"),
         }
     }
     #[private]
@@ -47,10 +44,19 @@ impl Contract {
         self.oracles.to_vec()
     }
 
-    pub fn mint_tge(&mut self, amount: U128, account_for: AccountId) {
-        assert!(self.oracles.contains(&env::predecessor_account_id()));
-        self.token.internal_register_account(&account_for);
-        internal_deposit(&mut self.token, &env::predecessor_account_id(), amount.0);
+    #[private]
+    pub fn tge_mint(&mut self, account_id: &AccountId, amount: Balance) {
+        assert_eq!(env::predecessor_account_id(), env::current_account_id());
+        internal_deposit(&mut self.token, &account_id, amount);
+    }
+
+    #[private]
+    pub fn tge_mint_batch(&mut self, batch: Vec<(AccountId, Balance)>) {
+        assert_eq!(env::predecessor_account_id(), env::current_account_id());
+        for (account_id, amount) in batch.into_iter() {
+            self.token.internal_register_account(&account_id);
+            internal_deposit(&mut self.token, &account_id, amount);
+        }
     }
 
     pub fn burn(&mut self, amount: &U128) {
@@ -72,37 +78,18 @@ impl Contract {
         assert!(self.oracles.contains(&env::predecessor_account_id()));
         let mut oracle_fee: u128 = 0;
         for (account_id, steps) in steps_batch.into_iter() {
-            let capped_steps = self.get_capped_steps(&account_id, steps);
-            let sweat_to_mint: u128 = self.formula(self.steps_from_tge, capped_steps).0;
+            let sweat_to_mint: u128 = self.formula(self.steps_from_tge, steps).0;
             let trx_oracle_fee: u128 = sweat_to_mint * 5 / 100;
             let minted_to_user: u128 = sweat_to_mint - trx_oracle_fee;
             oracle_fee = oracle_fee + trx_oracle_fee;
             internal_deposit(&mut self.token, &account_id, minted_to_user);
-            self.steps_from_tge.0 += capped_steps as u64;
+            self.steps_from_tge.0 += steps as u64;
         }
         internal_deposit(&mut self.token, &env::predecessor_account_id(), oracle_fee);
     }
 
     pub fn formula(&self, steps_from_tge: U64, steps: u16) -> U128 {
         U128(math::formula(steps_from_tge.0 as f64, steps as f64))
-    }
-
-    fn get_capped_steps(&mut self, account_id: &AccountId, steps_to_convert: u16) -> u16 {
-        let (mut sum, mut ts) = self.daily_limits.get(account_id).unwrap_or((0, 0));
-        let current_ts: u64 = env::block_timestamp();
-        const DAY_IN_NANOS: u64 = 86_400_000_000_000;
-        const DAILY_STEP_CONVERSION_LIMIT: u16 = 10_000;
-        let mut remaining_steps = 2 * DAILY_STEP_CONVERSION_LIMIT;
-        if ts == 0 || current_ts - ts >= DAY_IN_NANOS {
-            ts = current_ts;
-            sum = 0;
-        }
-
-        remaining_steps = i16::max(0, remaining_steps as i16 - sum as i16) as u16;
-        let capped_steps: u16 = u16::min(remaining_steps, steps_to_convert);
-        self.daily_limits
-            .insert(account_id, &(sum + capped_steps, ts));
-        capped_steps
     }
 }
 
