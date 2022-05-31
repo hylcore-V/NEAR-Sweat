@@ -44,10 +44,19 @@ impl Contract {
         self.oracles.to_vec()
     }
 
-    pub fn mint_tge(&mut self, amount: U128, account_for: AccountId) {
-        assert!(self.oracles.contains(&env::predecessor_account_id()));
-        self.token.internal_register_account(&account_for);
-        internal_deposit(&mut self.token, &env::predecessor_account_id(), amount.0);
+    #[private]
+    pub fn tge_mint(&mut self, account_id: &AccountId, amount: Balance) {
+        assert_eq!(env::predecessor_account_id(), env::current_account_id());
+        internal_deposit(&mut self.token, &account_id, amount);
+    }
+
+    #[private]
+    pub fn tge_mint_batch(&mut self, batch: Vec<(AccountId, Balance)>) {
+        assert_eq!(env::predecessor_account_id(), env::current_account_id());
+        for (account_id, amount) in batch.into_iter() {
+            self.token.internal_register_account(&account_id);
+            internal_deposit(&mut self.token, &account_id, amount);
+        }
     }
 
     pub fn burn(&mut self, amount: &U128) {
