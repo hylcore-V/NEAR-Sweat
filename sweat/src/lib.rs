@@ -45,17 +45,17 @@ impl Contract {
     }
 
     #[private]
-    pub fn tge_mint(&mut self, account_id: &AccountId, amount: Balance) {
+    pub fn tge_mint(&mut self, account_id: &AccountId, amount: U128) {
         assert_eq!(env::predecessor_account_id(), env::current_account_id());
-        internal_deposit(&mut self.token, &account_id, amount);
+        internal_deposit(&mut self.token, &account_id, amount.0);
     }
 
     #[private]
-    pub fn tge_mint_batch(&mut self, batch: Vec<(AccountId, Balance)>) {
+    pub fn tge_mint_batch(&mut self, batch: Vec<(AccountId, U128)>) {
         assert_eq!(env::predecessor_account_id(), env::current_account_id());
         for (account_id, amount) in batch.into_iter() {
             self.token.internal_register_account(&account_id);
-            internal_deposit(&mut self.token, &account_id, amount);
+            internal_deposit(&mut self.token, &account_id, amount.0);
         }
     }
 
