@@ -87,35 +87,33 @@ impl Contract {
         let mut oracle_fee: U128 = U128(0);
         let mut sweats: Vec<U128> = Vec::with_capacity(steps_batch.len() + 1);
         let mut events = Vec::with_capacity(steps_batch.len() + 1);
-
-        for (account_id, steps) in steps_batch.iter() {
-            let sweat_to_mint: u128 = self.formula(self.steps_from_tge, *steps).0;
+        for i in 0..steps_batch.len() {
+            let sweat_to_mint: u128 = self.formula(self.steps_from_tge, steps_batch[i].1).0;
             let trx_oracle_fee: u128 = sweat_to_mint * 5 / 100;
             let minted_to_user: u128 = sweat_to_mint - trx_oracle_fee;
             oracle_fee.0 = oracle_fee.0 + trx_oracle_fee;
-            internal_deposit(&mut self.token, &account_id, minted_to_user);
+            internal_deposit(&mut self.token, &steps_batch[i].0, minted_to_user);
             sweats.push(U128(minted_to_user));
-            self.steps_from_tge.0 += *steps as u64;
+            self.steps_from_tge.0 += steps_batch[i].1 as u64;
+        }
+        for i in 0..steps_batch.len() {
+            events.push(FtMint {
+                owner_id: &steps_batch[i].0,
+                amount: &sweats[i],
+                memo: None,
+            });
         }
         internal_deposit(
             &mut self.token,
             &env::predecessor_account_id(),
             oracle_fee.0,
         );
-        // fire events
-        for i in 0..steps_batch.len() {
-            events.push(FtMint {
-                owner_id: &steps_batch[i].0,
-                amount: &sweats[i],
-                memo: None,
-            })
-        }
-        let t = FtMint {
+        let oracle_event = FtMint {
             owner_id: &env::predecessor_account_id(),
             amount: &oracle_fee,
             memo: None,
         };
-        events.push(t);
+        events.push(oracle_event);
         FtMint::emit_many(events.as_slice());
     }
 
