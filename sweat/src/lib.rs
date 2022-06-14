@@ -53,9 +53,17 @@ impl Contract {
     #[private]
     pub fn tge_mint_batch(&mut self, batch: Vec<(AccountId, U128)>) {
         assert_eq!(env::predecessor_account_id(), env::current_account_id());
-        for (account_id, amount) in batch.into_iter() {
-            self.token.internal_register_account(&account_id);
-            internal_deposit(&mut self.token, &account_id, amount.0);
+        let mut events = Vec::with_capacity(batch.len());
+        for i in 0..batch.len() {
+            internal_deposit(&mut self.token, &batch[i].0, batch[i].1 .0);
+            events.push(FtMint {
+                owner_id: &batch[i].0,
+                amount: &batch[i].1,
+                memo: None,
+            })
+        }
+        if !events.is_empty() {
+            FtMint::emit_many(events.as_slice());
         }
     }
 
