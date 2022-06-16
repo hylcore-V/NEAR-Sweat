@@ -53,9 +53,17 @@ impl Contract {
     #[private]
     pub fn tge_mint_batch(&mut self, batch: Vec<(AccountId, U128)>) {
         assert_eq!(env::predecessor_account_id(), env::current_account_id());
-        for (account_id, amount) in batch.into_iter() {
-            self.token.internal_register_account(&account_id);
-            internal_deposit(&mut self.token, &account_id, amount.0);
+        let mut events = Vec::with_capacity(batch.len());
+        for i in 0..batch.len() {
+            internal_deposit(&mut self.token, &batch[i].0, batch[i].1 .0);
+            events.push(FtMint {
+                owner_id: &batch[i].0,
+                amount: &batch[i].1,
+                memo: None,
+            })
+        }
+        if !events.is_empty() {
+            FtMint::emit_many(events.as_slice());
         }
     }
 
@@ -76,16 +84,37 @@ impl Contract {
 
     pub fn record_batch(&mut self, steps_batch: Vec<(AccountId, u16)>) {
         assert!(self.oracles.contains(&env::predecessor_account_id()));
-        let mut oracle_fee: u128 = 0;
-        for (account_id, steps) in steps_batch.into_iter() {
-            let sweat_to_mint: u128 = self.formula(self.steps_from_tge, steps).0;
+        let mut oracle_fee: U128 = U128(0);
+        let mut sweats: Vec<U128> = Vec::with_capacity(steps_batch.len() + 1);
+        let mut events = Vec::with_capacity(steps_batch.len() + 1);
+        for i in 0..steps_batch.len() {
+            let sweat_to_mint: u128 = self.formula(self.steps_from_tge, steps_batch[i].1).0;
             let trx_oracle_fee: u128 = sweat_to_mint * 5 / 100;
             let minted_to_user: u128 = sweat_to_mint - trx_oracle_fee;
-            oracle_fee = oracle_fee + trx_oracle_fee;
-            internal_deposit(&mut self.token, &account_id, minted_to_user);
-            self.steps_from_tge.0 += steps as u64;
+            oracle_fee.0 = oracle_fee.0 + trx_oracle_fee;
+            internal_deposit(&mut self.token, &steps_batch[i].0, minted_to_user);
+            sweats.push(U128(minted_to_user));
+            self.steps_from_tge.0 += steps_batch[i].1 as u64;
         }
-        internal_deposit(&mut self.token, &env::predecessor_account_id(), oracle_fee);
+        for i in 0..steps_batch.len() {
+            events.push(FtMint {
+                owner_id: &steps_batch[i].0,
+                amount: &sweats[i],
+                memo: None,
+            });
+        }
+        internal_deposit(
+            &mut self.token,
+            &env::predecessor_account_id(),
+            oracle_fee.0,
+        );
+        let oracle_event = FtMint {
+            owner_id: &env::predecessor_account_id(),
+            amount: &oracle_fee,
+            memo: None,
+        };
+        events.push(oracle_event);
+        FtMint::emit_many(events.as_slice());
     }
 
     pub fn formula(&self, steps_from_tge: U64, steps: u16) -> U128 {
@@ -109,12 +138,6 @@ fn internal_deposit(token: &mut FungibleToken, account_id: &AccountId, amount: B
         .total_supply
         .checked_add(amount)
         .unwrap_or_else(|| env::panic_str("Total supply overflow"));
-    FtMint {
-        owner_id: account_id,
-        amount: &U128(amount),
-        memo: None,
-    }
-    .emit()
 }
 
 pub const ICON: &str = "data:image/svg+xml,%3Csvg viewBox='0 0 100 100' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100' height='100' rx='50' fill='%23FF0D75'/%3E%3Cg clip-path='url(%23clip0_283_2788)'%3E%3Cpath d='M39.4653 77.5455L19.0089 40.02L35.5411 22.2805L55.9975 59.806L39.4653 77.5455Z' stroke='white' stroke-width='10'/%3E%3Cpath d='M66.0253 77.8531L45.569 40.3276L62.1012 22.5882L82.5576 60.1136L66.0253 77.8531Z' stroke='white' stroke-width='10'/%3E%3C/g%3E%3Cdefs%3E%3CclipPath id='clip0_283_2788'%3E%3Crect width='100' height='56' fill='white' transform='translate(0 22)'/%3E%3C/clipPath%3E%3C/defs%3E%3C/svg%3E%0A";
