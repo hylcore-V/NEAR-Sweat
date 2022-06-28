@@ -11,3 +11,4 @@ crate-type = ["cdylib"]
 [dependencies]
 near-sdk = "4.0.0-pre.7"
 near-contract-standards = "4.0.0-pre.7"
+static_assertions = "1.1.0"
