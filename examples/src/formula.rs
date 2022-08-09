@@ -16,25 +16,22 @@ async fn main() -> anyhow::Result<()> {
     let wasm = std::fs::read(SWEAT_WASM_FILEPATH)?;
     let contract = worker.dev_deploy(&wasm).await?;
     let oracle1 = worker.dev_create_account().await?;
-    let oracle2 = worker.dev_create_account().await?;
 
     let result = contract
         .call(&worker, "new")
-        .args_json(json!({
-                "oracles_vec": vec![oracle1.id(), oracle2.id()],
-        }))?
+        .args_json(json!({}))?
         .transact()
         .await?;
-    println!("deploy & init: {:#?}", result);
+    println!("deploy: {:#?}", result);
 
     let result = worker
-        .view(contract.id(), "get_steps_from_tge", Vec::new())
+        .view(contract.id(), "get_steps_since_tge", Vec::new())
         .await?
         .json::<U64>()?;
     assert_eq!(result, U64(0));
 
-    let steps_to_convert = vec![1, 10, 100, 1000, 10000];
-    let steps_from_tge = vec![
+    let steps_to_convert = vec![1u16, 10, 100, 1000, 10000];
+    let steps_since_tge = vec![
         1,
         10,
         100,
@@ -51,14 +48,13 @@ async fn main() -> anyhow::Result<()> {
         10000000000000,
         100000000000000,
         1000000000000000u64,
-        999999999000,
     ];
     let mut test_number = 0;
-    for tge in 0..steps_from_tge.len() {
+    for tge in 0..steps_since_tge.len() {
         for steps in 0..steps_to_convert.len() {
             let formula_res = oracle1
                 .call(&worker, contract.id(), "formula")
-                .args_json((U64(steps_from_tge[tge]), steps_to_convert[steps]))?
+                .args_json((U64(steps_since_tge[tge]), steps_to_convert[steps]))?
                 .max_gas()
                 .transact()
                 .await?
@@ -67,7 +63,7 @@ async fn main() -> anyhow::Result<()> {
                 / 1e+18;
             println!(
                 "formula ({} {}) = {}",
-                steps_from_tge[tge], steps_to_convert[steps], formula_res
+                steps_since_tge[tge], steps_to_convert[steps], formula_res
             );
 
             let diff = formula_res - TEST_RESULTS[test_number];
@@ -79,7 +75,7 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-const TEST_RESULTS: [f64; 85] = [
+const TEST_RESULTS: [f64; 80] = [
     0.0009999999999997387,
     0.009999999999989545,
     0.09999999999911131,
@@ -160,9 +156,4 @@ const TEST_RESULTS: [f64; 85] = [
     0.00047393471422484454,
     0.004739338881660464,
     0.047393368165134696,
-    0.0008257479340584625,
-    0.008257479340576784,
-    0.08257479340498369,
-    0.8257479339714235,
-    8.257479333984337,
 ];

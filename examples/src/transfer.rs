@@ -14,20 +14,18 @@ async fn main() -> anyhow::Result<()> {
     let wasm = std::fs::read(SWEAT_WASM_FILEPATH)?;
     let contract = worker.dev_deploy(&wasm).await?;
     let oracle1 = worker.dev_create_account().await?;
-    let oracle2 = worker.dev_create_account().await?;
     let user = worker.dev_create_account().await?;
 
     let result = contract
         .call(&worker, "new")
-        .args_json(json!({
-                "oracles_vec": vec![oracle1.id(), oracle2.id()],
-        }))?
+        .args_json(json!({}))?
         .transact()
         .await?;
-    println!("deploy & init: {:#?}", result);
+
+    println!("deploy: {:#?}", result);
 
     let result = worker
-        .view(contract.id(), "get_steps_from_tge", Vec::new())
+        .view(contract.id(), "get_steps_since_tge", Vec::new())
         .await?
         .json::<U64>()?;
     assert_eq!(result, U64(0));
@@ -37,7 +35,7 @@ async fn main() -> anyhow::Result<()> {
             &worker,
             "formula",
             json!({
-                "steps_from_tge": U64(0),
+                "steps_since_tge": U64(0),
                 "steps" : 10_000u32,
             })
             .to_string()
@@ -95,7 +93,7 @@ async fn main() -> anyhow::Result<()> {
     assert_eq!(result, U128(9999999991287398400 * 95 / 100));
 
     let result = worker
-        .view(contract.id(), "get_steps_from_tge", Vec::new())
+        .view(contract.id(), "get_steps_since_tge", Vec::new())
         .await?
         .json::<U64>()?;
     assert_eq!(result, U64(10_000));
@@ -137,6 +135,7 @@ async fn main() -> anyhow::Result<()> {
         .transact()
         .await?;
     assert!(res.is_success());
+    println!("ft_transfer: {:#?}", res);
 
     Ok(())
 }
