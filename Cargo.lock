@@ -1381,7 +1381,7 @@ dependencies = [
 [[package]]
 name = "near-contract-standards"
 version = "4.0.0"
-source = "git+https://github.com/sweatco/near-sdk-rs?rev=6462045270eeae2433f8ad114ddf8678adb31f1a#6462045270eeae2433f8ad114ddf8678adb31f1a"
+source = "git+https://github.com/sweatco/near-sdk-rs?rev=af6ba3cb75e0bbfc26e346e61aa3a0d1d7f5ac7b#af6ba3cb75e0bbfc26e346e61aa3a0d1d7f5ac7b"
 dependencies = [
  "near-sdk",
  "serde",
@@ -1661,7 +1661,7 @@ dependencies = [
 [[package]]
 name = "near-sdk"
 version = "4.0.0"
-source = "git+https://github.com/sweatco/near-sdk-rs?rev=6462045270eeae2433f8ad114ddf8678adb31f1a#6462045270eeae2433f8ad114ddf8678adb31f1a"
+source = "git+https://github.com/sweatco/near-sdk-rs?rev=af6ba3cb75e0bbfc26e346e61aa3a0d1d7f5ac7b#af6ba3cb75e0bbfc26e346e61aa3a0d1d7f5ac7b"
 dependencies = [
  "base64 0.13.0",
  "borsh",
@@ -1680,7 +1680,7 @@ dependencies = [
 [[package]]
 name = "near-sdk-macros"
 version = "4.0.0"
-source = "git+https://github.com/sweatco/near-sdk-rs?rev=6462045270eeae2433f8ad114ddf8678adb31f1a#6462045270eeae2433f8ad114ddf8678adb31f1a"
+source = "git+https://github.com/sweatco/near-sdk-rs?rev=af6ba3cb75e0bbfc26e346e61aa3a0d1d7f5ac7b#af6ba3cb75e0bbfc26e346e61aa3a0d1d7f5ac7b"
 dependencies = [
  "Inflector",
  "proc-macro2",
@@ -1691,7 +1691,7 @@ dependencies = [
 [[package]]
 name = "near-sys"
 version = "0.2.0"
-source = "git+https://github.com/sweatco/near-sdk-rs?rev=6462045270eeae2433f8ad114ddf8678adb31f1a#6462045270eeae2433f8ad114ddf8678adb31f1a"
+source = "git+https://github.com/sweatco/near-sdk-rs?rev=af6ba3cb75e0bbfc26e346e61aa3a0d1d7f5ac7b#af6ba3cb75e0bbfc26e346e61aa3a0d1d7f5ac7b"
 
 [[package]]
 name = "near-units"
