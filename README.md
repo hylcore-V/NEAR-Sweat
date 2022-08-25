@@ -23,7 +23,7 @@ cargo run --example formula
 Let's say my account is `sweat_testing_11.testnet`:
 
 ```js
-near deploy --accountId=sweat_testing_11.testnet --wasmFile=target/wasm32-unknown-unknown/release/sweat.wasm --initArgs '{}' --initFunction new
+near deploy --accountId=sweat_testing_11.testnet --wasmFile=target/wasm32-unknown-unknown/release/sweat.wasm --initArgs '{ "postfix": ".u.sweat.testnet"}' --initFunction new
 
 near call sweat_testing_11.testnet add_oracle '{"account_id":"intmainreturn0.testnet"}' --accountId sweat_testing_11.testnet --gas=2428088695050
 
