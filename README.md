@@ -10,7 +10,7 @@
 
 ```rust
 ./sweat/build.sh
-//The wasm file will be at `target/wasm32-unknown-unknown/release/sweat.wasm`
+//The wasm file will be at `res/sweat.wasm`
 
 cargo test -- --nocapture
 cargo run --example mint
@@ -18,39 +18,55 @@ cargo run --example transfer
 cargo run --example formula
 ```
 
-## Api
+## Usage
 
-Let's say my account is `sweat_testing_11.testnet`:
+```bash
+export TOKEN_ACCOUNT_ID=your-token-account-id
+```
+Deploy and initialize the contract:
+```bash
+near deploy --accountId=$TOKEN_ACCOUNT_ID --wasmFile=res/sweat.wasm --initArgs '{"postfix": ".u.sweat.testnet"}' --initFunction new
+```
+Add an oracle
+```bash
+export ORACLE_ACCOUNT_ID=your-oracle-account-id
+```
+```bash
+near call $TOKEN_ACCOUNT_ID add_oracle `{"account_id":"${ORACLE_ACCOUNT_ID}"}` --accountId $TOKEN_ACCOUNT_ID --gas=2428088695050
+near view sweat_testing_11.testnet get_oracles
+[ 'your-oracle-account-id' ]
+```
 
-```js
-near deploy --accountId=sweat_testing_11.testnet --wasmFile=target/wasm32-unknown-unknown/release/sweat.wasm --initArgs '{ "postfix": ".u.sweat.testnet"}' --initFunction new
-
-near call sweat_testing_11.testnet add_oracle '{"account_id":"intmainreturn0.testnet"}' --accountId sweat_testing_11.testnet --gas=2428088695050
-
-near view sweat_testing_11.testnet get_oracles ''
-[ 'intmainreturn0.testnet' ]
-
-near view sweat_testing_11.testnet get_steps_from_tge '{ }'
+Call view methods
+```bash
+near view $TOKEN_ACCOUNT_ID get_steps_from_tge
 '0'
 
-near view sweat_testing_11.testnet formula '{"steps_from_tge":"1", "steps":1000}'
+near view $TOKEN_ACCOUNT_ID formula '{"steps_from_tge":"1", "steps":1000}'
 '999999999912699776'
 
-near view sweat_testing_11.testnet ft_balance_of '{"account_id":"intmainreturn0.testnet"}'
+near view $TOKEN_ACCOUNT_ID ft_balance_of '{"account_id":"some-random-account.testnet"}'
 '0'
+```
 
-near call sweat_testing_11.testnet record_batch '{"steps_batch": [["intmainreturn0.testnet", 10000],["poddubny.testnet", 1000] ]}' --accountId intmainreturn0.testnet --gas=300000000000000
+Send steps as an Oracle
+```bash
+near call $TOKEN_ACCOUNT_ID record_batch '{"steps_batch": [["random-guy-1.testnet", 10000],["random-gal-2.testnet", 20000] ]}' --accountId $ORACLE_ACCOUNT_ID --gas=300000000000000
+```
+Transfer tokens
+```bash
+# not necessarily $ORACLE_ACCOUNT_ID, can be any local account
+near call $TOKEN_ACCOUNT_ID ft_transfer '{"receiver_id":"<receiver id>", "amount":"100", "memo":"hello world!"}' --accountId $ORACLE_ACCOUNT_ID --depositYocto 1
+```
+Pay for storage
+```bash
+# not necessarily $ORACLE_ACCOUNT_ID, can be any local account
+near call $TOKEN_ACCOUNT_ID storage_deposit '{"account_id":"ramdom-guy-1.testnet"}' --accountId $ORACLE_ACCOUNT_ID --depositYocto 2350000000000000000000
 
-near call sweat_testing_11.testnet ft_transfer '{"receiver_id":"poddubny.testnet", "amount":"2", "memo":"hello world!"}' --accountId intmainreturn0.testnet --gas=2428088695050
+near view $TOKEN_ACCOUNT_ID storage_balance_of '{"account_id":"random-guy-1.testnet"}' --accountId $ORACLE_ACCOUNT_ID
+```
 
-near call sweat_testing_11.testnet storage_deposit '{"account_id":"sweat_lookup_testing_03.testnet"}' --accountId intmainreturn0.testnet --depositYocto 2350000000000000000000
-
-near call sweat_testing_11.testnet storage_balance_of '{"account_id":"sweat_lookup_testing_03.testnet"}' --accountId intmainreturn0.testnet
-
-
-near call <token_account> mint_tge '{"amount":"<amount>", "account_for":"<account_for>"}' --accountId <oracle> --gas=300000000000000
-
-near call <token_account> ft_transfer_call '{"receiver_id" : "<lockups_account>", "amount":"<amount>", "msg": "{\"account_id\":\"<account_for>\",\"schedule\":[{\"timestamp\":<tge>,\"balance\":\"0\"},{\"timestamp\":<tge + 6 month in s>,\"balance\":\"<amount>\"}],\"claimed_balance\":\"0\",\"termination_config\": null } " }' --accountId <oracle> --gas=300000000000000 --depositYocto 1
-
-
+Mint tokens
+```bash
+near call $TOKEN_ACCOUNT_ID mint_tge '{"amount":"100", "account_for":"<account_for>"}' --accountId $TOKEN_ACCOUNT_ID --gas=300000000000000
 ```
