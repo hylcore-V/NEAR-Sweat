@@ -3,7 +3,7 @@ use serde_json::json;
 use near_sdk::json_types::{U128, U64};
 use workspaces::prelude::*;
 
-const SWEAT_WASM_FILEPATH: &str = "./target/wasm32-unknown-unknown/release/sweat.wasm";
+const SWEAT_WASM_FILEPATH: &str = "./res/sweat.wasm";
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -16,7 +16,7 @@ async fn main() -> anyhow::Result<()> {
     let oracle1 = worker.dev_create_account().await?;
     let user = worker.dev_create_account().await?;
 
-    let result = contract.call(&worker, "new").transact().await?;
+    let result = contract.call(&worker, "new").args_json(json!({}))?.transact().await?;
     println!("deploy: {:#?}", result);
 
     let result = worker
