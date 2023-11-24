@@ -1,5 +1,5 @@
 [package]
-name = "sweat"
+name = "defer-stub"
 version = "0.1.0"
 authors = []
 edition = "2021"
@@ -9,8 +9,4 @@ publish = false
 crate-type = ["cdylib"]
 
 [dependencies]
-sweat-model = { workspace = true }
-
-static_assertions = "1.1.0"
 near-sdk = { workspace = true }
-near-contract-standards = { workspace = true }

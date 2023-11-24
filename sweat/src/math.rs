@@ -835,8 +835,8 @@ mod tests {
 
     #[test]
     fn formula_test() {
-        let steps_to_convert = vec![1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000];
-        let steps_from_tge = vec![
+        let steps_to_convert = [1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000];
+        let steps_from_tge = [
             1,
             10,
             100,

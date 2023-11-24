@@ -1,16 +1,12 @@
 [package]
-name = "sweat"
+name = "sweat-model"
 version = "0.1.0"
-authors = []
 edition = "2021"
-publish = false
-
-[lib]
-crate-type = ["cdylib"]
 
 [dependencies]
-sweat-model = { workspace = true }
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+integration-trait = { workspace = true }
 
-static_assertions = "1.1.0"
 near-sdk = { workspace = true }
 near-contract-standards = { workspace = true }
