@@ -31,6 +31,7 @@ impl FungibleTokenCoreIntegration for SweatFt<'_> {
 
         let result = self
             .user_account()
+            .unwrap()
             .call(self.contract.id(), "ft_transfer")
             .args_json(args)
             .max_gas()
@@ -67,6 +68,7 @@ impl FungibleTokenCoreIntegration for SweatFt<'_> {
 
         let result = self
             .user_account()
+            .unwrap()
             .call(self.contract.id(), "ft_transfer_call")
             .args_json(args)
             .max_gas()
@@ -83,13 +85,13 @@ impl FungibleTokenCoreIntegration for SweatFt<'_> {
     }
 
     async fn ft_total_supply(&self) -> Result<U128> {
-        self.call_contract("ft_total_supply", ()).await
+        self.call("ft_total_supply", ()).await
     }
 
     async fn ft_balance_of(&self, account_id: AccountId) -> Result<U128> {
         println!(">> Run ft_balance_of for {account_id}");
 
-        self.call_contract(
+        self.call(
             "ft_balance_of",
             json!({
                 "account_id": account_id,
@@ -148,7 +150,7 @@ impl StorageManagementIntegration for SweatFt<'_> {
 #[async_trait]
 impl SweatDeferIntegration for SweatFt<'_> {
     async fn defer_batch(&mut self, steps_batch: Vec<(AccountId, u32)>, holding_account_id: AccountId) -> Result<()> {
-        self.call_user(
+        self.call(
             "defer_batch",
             json!({
                 "steps_batch": steps_batch,
@@ -162,7 +164,7 @@ impl SweatDeferIntegration for SweatFt<'_> {
 #[async_trait]
 impl SweatApiIntegration for SweatFt<'_> {
     async fn new(&self, postfix: Option<String>) -> Result<()> {
-        self.call_contract(
+        self.call(
             "new",
             json!({
                 "postfix": postfix,
@@ -172,7 +174,7 @@ impl SweatApiIntegration for SweatFt<'_> {
     }
 
     async fn add_oracle(&mut self, account_id: &AccountId) -> Result<()> {
-        self.call_contract(
+        self.call(
             "add_oracle",
             json!({
                 "account_id": account_id,
@@ -190,7 +192,7 @@ impl SweatApiIntegration for SweatFt<'_> {
     }
 
     async fn tge_mint(&mut self, account_id: &AccountId, amount: U128) -> anyhow::Result<()> {
-        self.call_contract(
+        self.call(
             "tge_mint",
             json!({
                 "account_id": account_id,
@@ -209,11 +211,11 @@ impl SweatApiIntegration for SweatFt<'_> {
     }
 
     async fn get_steps_since_tge(&self) -> Result<U64> {
-        self.call_contract("get_steps_since_tge", ()).await
+        self.call("get_steps_since_tge", ()).await
     }
 
     async fn record_batch(&mut self, steps_batch: Vec<(AccountId, u32)>) -> anyhow::Result<()> {
-        self.call_user(
+        self.call(
             "record_batch",
             json!({
                 "steps_batch": steps_batch,
@@ -223,7 +225,7 @@ impl SweatApiIntegration for SweatFt<'_> {
     }
 
     async fn formula(&self, steps_since_tge: U64, steps: u32) -> anyhow::Result<U128> {
-        self.call_contract(
+        self.call(
             "formula",
             json!({
                 "steps_since_tge": steps_since_tge,
@@ -257,11 +259,8 @@ impl<'a> IntegrationContract<'a> for SweatFt<'a> {
         self
     }
 
-    fn user_account(&self) -> Account {
-        self.account
-            .as_ref()
-            .expect("Set account with `user` method first")
-            .clone()
+    fn user_account(&self) -> Option<Account> {
+        self.account.clone()
     }
 
     fn contract(&self) -> &'a Contract {

@@ -18,8 +18,8 @@ near-workspaces = "0.9.0"
 
 near-sdk = { git = "https://github.com/sweatco/near-sdk-rs", rev = "8c48b26cc48d969c1e5f3162141fe9c824fccecd" }
 near-contract-standards = { git = "https://github.com/sweatco/near-sdk-rs", rev = "8c48b26cc48d969c1e5f3162141fe9c824fccecd" }
-integration-trait = { git = "https://github.com/sweatco/integration-trait.git", rev = "83a69f7ba4acab9405bf935f7dfc70f2f5279c40" }
-integration-utils = { git = "https://github.com/sweatco/integration-utils.git", rev = "1b05c03351009c901a45400687c24f685f8b81c3" }
+integration-trait = { git = "https://github.com/sweatco/integration-trait.git", rev = "8dd8b63cef5e60448629a8903ea43b642bbf9f45" }
+integration-utils = { git = "https://github.com/sweatco/integration-utils.git", rev = "9fe6398c6064dfe8a26c323a6d0ea3c117a0b4a5" }
 
 sweat-model = { path = "model" }
 sweat-integration = { path = "sweat-integration" }
