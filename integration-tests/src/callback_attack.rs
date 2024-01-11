@@ -17,7 +17,7 @@ async fn test_call_on_record_in_callback() -> anyhow::Result<()> {
 
     let alice = context.alice().await?;
 
-    let alice_balance_before_attack = context.ft_contract().ft_balance_of(alice.to_near()).await?;
+    let alice_balance_before_attack = context.ft_contract().ft_balance_of(alice.to_near()).call().await?;
 
     let target_amount = U128(1_000_000);
     let result = alice
@@ -33,7 +33,7 @@ async fn test_call_on_record_in_callback() -> anyhow::Result<()> {
 
     assert!(result.has_panic("The operation can be only initiated by an oracle"));
 
-    let alice_balance_after_attack = context.ft_contract().ft_balance_of(alice.to_near()).await?;
+    let alice_balance_after_attack = context.ft_contract().ft_balance_of(alice.to_near()).call().await?;
     assert_eq!(alice_balance_before_attack, alice_balance_after_attack);
 
     Ok(())

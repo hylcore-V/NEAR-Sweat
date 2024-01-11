@@ -1711,7 +1711,7 @@ dependencies = [
 [[package]]
 name = "integration-trait"
 version = "0.1.0"
-source = "git+https://github.com/sweatco/integration-trait.git?rev=8dd8b63cef5e60448629a8903ea43b642bbf9f45#8dd8b63cef5e60448629a8903ea43b642bbf9f45"
+source = "git+https://github.com/sweatco/integration-utils.git?rev=9a455faf70702e285eea39ae69a73a4d123b523f#9a455faf70702e285eea39ae69a73a4d123b523f"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1721,14 +1721,13 @@ dependencies = [
 [[package]]
 name = "integration-utils"
 version = "0.1.0"
-source = "git+https://github.com/sweatco/integration-utils.git?rev=9fe6398c6064dfe8a26c323a6d0ea3c117a0b4a5#9fe6398c6064dfe8a26c323a6d0ea3c117a0b4a5"
+source = "git+https://github.com/sweatco/integration-utils.git?rev=9a455faf70702e285eea39ae69a73a4d123b523f#9a455faf70702e285eea39ae69a73a4d123b523f"
 dependencies = [
  "anyhow",
  "async-trait",
  "dotenv",
  "fake",
  "futures",
- "itertools 0.11.0",
  "near-sdk 4.1.1 (git+https://github.com/sweatco/near-sdk-rs?rev=8c48b26cc48d969c1e5f3162141fe9c824fccecd)",
  "near-units",
  "near-workspaces",
@@ -1766,15 +1765,6 @@ name = "itertools"
 version = "0.10.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b0fd2260e829bddf4cb6ea802289de2f86d6a7a690192fbe91b3f46e0f2c8473"
-dependencies = [
- "either",
-]
-
-[[package]]
-name = "itertools"
-version = "0.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b1c173a5686ce8bfa551b3563d0c2170bf24ca44da99c7ca4bfdab5418c3fe57"
 dependencies = [
  "either",
 ]
@@ -3063,7 +3053,7 @@ checksum = "62941722fb675d463659e49c4f3fe1fe792ff24fe5bbaa9c08cd3b98a1c354f5"
 dependencies = [
  "bytes",
  "heck 0.3.3",
- "itertools 0.10.5",
+ "itertools",
  "lazy_static",
  "log",
  "multimap",
@@ -3082,7 +3072,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f9cc1a3263e07e0bf68e96268f37665207b49560d98739662cdfaae215c720fe"
 dependencies = [
  "anyhow",
- "itertools 0.10.5",
+ "itertools",
  "proc-macro2",
  "quote",
  "syn 1.0.109",
@@ -3857,6 +3847,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "integration-trait",
+ "integration-utils",
  "near-contract-standards",
  "near-sdk 4.1.1 (git+https://github.com/sweatco/near-sdk-rs?rev=8c48b26cc48d969c1e5f3162141fe9c824fccecd)",
 ]

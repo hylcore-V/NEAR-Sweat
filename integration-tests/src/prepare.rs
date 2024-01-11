@@ -46,19 +46,25 @@ pub async fn prepare_contract() -> anyhow::Result<Context> {
     let oracle = context.oracle().await?;
     let alice = context.alice().await?;
 
-    context.ft_contract().new(".u.sweat.testnet".to_string().into()).await?;
+    context
+        .ft_contract()
+        .new(".u.sweat.testnet".to_string().into())
+        .call()
+        .await?;
 
     context
         .ft_contract()
         .storage_deposit(oracle.to_near().into(), None)
+        .call()
         .await?;
 
     context
         .ft_contract()
         .storage_deposit(alice.to_near().into(), None)
+        .call()
         .await?;
 
-    context.ft_contract().add_oracle(&oracle.to_near()).await?;
+    context.ft_contract().add_oracle(&oracle.to_near()).call().await?;
 
     let holding_contract_init_result = context
         .holding_contract()
@@ -72,6 +78,7 @@ pub async fn prepare_contract() -> anyhow::Result<Context> {
     context
         .ft_contract()
         .storage_deposit(context.holding_contract().as_account().to_near().into(), None)
+        .call()
         .await?;
 
     Ok(context)
