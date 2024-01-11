@@ -1700,7 +1700,6 @@ dependencies = [
  "near-units",
  "near-workspaces",
  "pkg-config",
- "serde_json",
  "sweat-integration",
  "sweat-model",
  "tokio",
@@ -1711,7 +1710,7 @@ dependencies = [
 [[package]]
 name = "integration-trait"
 version = "0.1.0"
-source = "git+https://github.com/sweatco/integration-utils.git?rev=9a455faf70702e285eea39ae69a73a4d123b523f#9a455faf70702e285eea39ae69a73a4d123b523f"
+source = "git+https://github.com/sweatco/integration-utils.git?rev=b3e5b747b930ebc04601146deda13f12615d5e01#b3e5b747b930ebc04601146deda13f12615d5e01"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1721,7 +1720,7 @@ dependencies = [
 [[package]]
 name = "integration-utils"
 version = "0.1.0"
-source = "git+https://github.com/sweatco/integration-utils.git?rev=9a455faf70702e285eea39ae69a73a4d123b523f#9a455faf70702e285eea39ae69a73a4d123b523f"
+source = "git+https://github.com/sweatco/integration-utils.git?rev=b3e5b747b930ebc04601146deda13f12615d5e01#b3e5b747b930ebc04601146deda13f12615d5e01"
 dependencies = [
  "anyhow",
  "async-trait",

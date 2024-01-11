@@ -1,8 +1,7 @@
 #![cfg(test)]
 
 use integration_utils::{integration_contract::IntegrationContract, misc::ToNear};
-use near_sdk::json_types::U128;
-use serde_json::json;
+use near_sdk::{json_types::U128, serde_json::json};
 use sweat_model::FungibleTokenCoreIntegration;
 
 use crate::{
