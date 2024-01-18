@@ -3,6 +3,8 @@ use sweat_model::SweatDefer;
 
 use crate::*;
 
+const ONE_GGAS: u64 = Gas::ONE_TERA.0 / 1000;
+
 #[near_bindgen]
 impl SweatDefer for Contract {
     fn defer_batch(&mut self, steps_batch: Vec<(AccountId, u32)>, holding_account_id: AccountId) -> PromiseOrValue<()> {
@@ -10,6 +12,8 @@ impl SweatDefer for Contract {
             self.oracles.contains(&env::predecessor_account_id()),
             "Unauthorized access! Only oracle can call that!"
         );
+
+        let batch_len = steps_batch.len() as u64;
 
         let mut accounts_tokens: Vec<(AccountId, U128)> = Vec::new();
         let mut total_effective: U128 = U128(0);
@@ -28,16 +32,19 @@ impl SweatDefer for Contract {
             "amounts": accounts_tokens,
         });
 
+        // These values calculated in `measure_record_batch_for_hold_test` in claim contract.
+        let record_batch_for_hold_gas = Gas::ONE_TERA * 8 + Gas(batch_len * ONE_GGAS * 320);
+
         Promise::new(holding_account_id.clone())
             .function_call(
                 "record_batch_for_hold".to_string(),
                 hold_arguments.to_string().into_bytes(),
                 0,
-                Gas(20 * 1_000_000_000_000),
+                record_batch_for_hold_gas,
             )
             .then(
                 ext_ft_transfer_callback::ext(env::current_account_id())
-                    .with_static_gas(Gas(5 * 1_000_000_000_000))
+                    .with_static_gas(Gas::ONE_TERA * 5)
                     .on_record(
                         holding_account_id,
                         total_effective,

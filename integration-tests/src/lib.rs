@@ -10,6 +10,7 @@ mod common;
 mod defer;
 mod formula;
 mod interface;
+mod measure;
 mod mint;
 mod prepare;
 mod transfer;

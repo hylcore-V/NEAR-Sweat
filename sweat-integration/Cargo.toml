@@ -10,7 +10,7 @@ integration-utils = { workspace = true }
 
 sweat-model = { workspace = true, features = ["integration-test"] }
 
-near-units = "0.2.0"
+near-units = { workspace = true }
 near-sdk = { workspace = true }
 near-contract-standards = { workspace = true }
-near-workspaces = "0.9.0"
+near-workspaces = { workspace = true }
