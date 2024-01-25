@@ -4,7 +4,7 @@ use near_sdk::{
     json_types::{U128, U64},
     near_bindgen,
 };
-use sweat_model::{IntegrationTestMethods, SweatApi};
+use sweat_model::{IntegrationTestMethods, Payout, SweatApi};
 
 use crate::{Contract, ContractExt};
 
@@ -20,11 +20,10 @@ impl IntegrationTestMethods for Contract {
 
             let minted = self.formula(U64(steps_since_tge.into()), steps).0;
 
-            let fee = (minted * 5).div_ceil(100);
-            let for_user = minted - fee;
+            let payout = Payout::from(minted);
 
-            total_fee += fee;
-            total_for_user += for_user;
+            total_fee += payout.fee;
+            total_for_user += payout.amount_for_user;
         }
 
         (U128(total_fee), U128(total_for_user))

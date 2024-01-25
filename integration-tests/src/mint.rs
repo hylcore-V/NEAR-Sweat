@@ -1,6 +1,6 @@
 use integration_utils::misc::ToNear;
 use near_sdk::json_types::{U128, U64};
-use sweat_model::{FungibleTokenCoreIntegration, SweatApiIntegration};
+use sweat_model::{FungibleTokenCoreIntegration, Payout, SweatApiIntegration};
 
 use crate::prepare::{prepare_contract, IntegrationContext};
 
@@ -30,11 +30,13 @@ async fn test_mint() -> anyhow::Result<()> {
         .call()
         .await?;
 
+    let target_payout = Payout::from(TARGET_BALANCE);
+
     let result = context.ft_contract().ft_balance_of(oracle.to_near()).call().await?;
-    assert_eq!(result, U128(TARGET_BALANCE * 5 / 100));
+    assert_eq!(result, U128(target_payout.fee));
 
     let result = context.ft_contract().ft_balance_of(user.to_near()).call().await?;
-    assert_eq!(result, U128(TARGET_BALANCE * 95 / 100));
+    assert_eq!(result, U128(target_payout.amount_for_user));
 
     let result = context.ft_contract().get_steps_since_tge().call().await?;
     assert_eq!(result, U64(TARGET_STEPS_SINCE_TGE as u64));

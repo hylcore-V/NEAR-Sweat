@@ -9,8 +9,8 @@ use near_sdk::{
 };
 use near_workspaces::{types::NearToken, Contract};
 use sweat_model::{
-    FungibleTokenCoreIntegration, IntegrationTestMethodsIntegration, StorageManagementIntegration, SweatApiIntegration,
-    SweatDeferIntegration,
+    FungibleTokenCoreIntegration, IntegrationTestMethodsIntegration, Payout, StorageManagementIntegration,
+    SweatApiIntegration, SweatDeferIntegration,
 };
 
 pub const FT_CONTRACT: &str = "sweat";
@@ -200,10 +200,9 @@ impl IntegrationTestMethodsIntegration for SweatFt<'_> {
 impl SweatFt<'_> {
     pub async fn formula_detailed(&self, steps_since_tge: U64, steps: u32) -> anyhow::Result<(U128, U128, U128)> {
         let token_amount = self.formula(steps_since_tge, steps).call().await?.0;
-        let fee = token_amount * 5 / 100;
-        let effective_amount = token_amount - fee;
+        let payout = Payout::from(token_amount);
 
-        Ok((U128(fee), U128(effective_amount), U128(token_amount)))
+        Ok((U128(payout.fee), U128(payout.amount_for_user), U128(token_amount)))
     }
 }
 

@@ -86,3 +86,19 @@ pub trait StorageManagement {
 pub trait IntegrationTestMethods {
     fn calculate_payout_with_fee_for_batch(&self, batch_size: u32, claim_amount: u32) -> (U128, U128);
 }
+
+pub struct Payout {
+    pub amount_for_user: u128,
+    pub fee: u128,
+}
+
+impl From<u128> for Payout {
+    fn from(value: u128) -> Self {
+        let fee = (value * 5).div_ceil(100);
+
+        Self {
+            fee,
+            amount_for_user: value - fee,
+        }
+    }
+}
