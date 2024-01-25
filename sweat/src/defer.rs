@@ -67,11 +67,8 @@ pub trait FungibleTokenTransferCallback {
 
 #[near_bindgen]
 impl FungibleTokenTransferCallback for Contract {
+    #[private]
     fn on_record(&mut self, receiver_id: AccountId, amount: U128, fee_account_id: AccountId, fee: U128) {
-        if !self.oracles.contains(&env::signer_account_id()) {
-            panic_str("The operation can be only initiated by an oracle");
-        }
-
         if !is_promise_success() {
             panic_str("Failed to record data in holding account");
         }
