@@ -145,7 +145,7 @@ impl SweatApi for Contract {
 impl Contract {
     pub(crate) fn calculate_tokens_amount(&self, steps: u32) -> (u128, u128) {
         let sweat_to_mint: u128 = self.formula(self.steps_since_tge, steps).0;
-        let trx_oracle_fee: u128 = sweat_to_mint * 5 / 100;
+        let trx_oracle_fee: u128 = (sweat_to_mint * 5).div_ceil(100);
         let minted_to_user: u128 = sweat_to_mint - trx_oracle_fee;
 
         (minted_to_user, trx_oracle_fee)
