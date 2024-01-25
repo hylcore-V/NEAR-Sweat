@@ -1,8 +1,11 @@
+#![allow(clippy::excessive_precision, clippy::unreadable_literal)]
+
 #[allow(dead_code)]
 const fn assert_lookup_lengths() {
     const_assert_eq!(KS.len(), BS.len());
 }
 
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
 pub fn formula(steps_since_tge: f64, steps: f64) -> u128 {
     let trillion = (steps_since_tge / 1e+12).floor() as usize;
     if trillion < KS.len() {
@@ -11,10 +14,13 @@ pub fn formula(steps_since_tge: f64, steps: f64) -> u128 {
         (exp_decay(steps_since_tge, steps) * 1e+18) as u128
     }
 }
+
+#[allow(clippy::cast_possible_truncation)]
 pub fn area_under_line(k: f64, b: f64, x_start: f64, x_end: f64) -> f64 {
     let square_area = (k * x_end + b) * (x_end - x_start);
     let triangle_area = ((k * x_start + b) - (k * x_end + b)) * (x_end - x_start) / 2.;
-    return square_area + triangle_area;
+
+    square_area + triangle_area
 }
 pub fn exp_decay(steps_from_tge: f64, steps_to_exchange: f64) -> f64 {
     ((K * (steps_from_tge + steps_to_exchange) + 1000.).ln() - (K * steps_from_tge + 1000.).ln()) / K
@@ -855,18 +861,12 @@ mod tests {
             1000000000000000u64,
         ];
         let mut test_number = 0;
-        for tge in 0..steps_from_tge.len() {
-            for steps in 0..steps_to_convert.len() {
-                let formula_res = formula(steps_from_tge[tge] as f64, steps_to_convert[steps] as f64) as f64 / 1e+18;
+        for tge in steps_from_tge {
+            for steps in steps_to_convert {
+                let formula_res = formula(tge as f64, steps as f64) as f64 / 1e+18;
                 let diff = formula_res - TEST_RESULTS[test_number];
-                assert_eq!(true, diff.abs() < EPS);
-                //if diff.abs() > EPS {
-                //    println!(
-                //        "{} {}   {}",
-                //        steps_from_tge[tge], steps_to_convert[steps], TEST_RESULTS[test_number],
-                //    );
-                //}
-                test_number = test_number + 1;
+                assert!(diff.abs() < EPS);
+                test_number += 1;
             }
         }
     }

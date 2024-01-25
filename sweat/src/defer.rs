@@ -1,7 +1,11 @@
-use near_sdk::{env::panic_str, serde_json::json, Gas, Promise};
+use near_contract_standards::fungible_token::events::FtMint;
+use near_sdk::{
+    env, env::panic_str, ext_contract, is_promise_success, json_types::U128, near_bindgen, require, serde_json::json,
+    AccountId, Gas, Promise, PromiseOrValue,
+};
 use sweat_model::SweatDefer;
 
-use crate::*;
+use crate::{internal_deposit, Contract, ContractExt};
 
 const ONE_GGAS: u64 = Gas::ONE_TERA.0 / 1000;
 
@@ -21,7 +25,7 @@ impl SweatDefer for Contract {
 
         for (account_id, step_count) in steps_batch {
             let (amount, fee) = self.calculate_tokens_amount(step_count);
-            self.steps_since_tge.0 += step_count as u64;
+            self.steps_since_tge.0 += u64::from(step_count);
 
             accounts_tokens.push((account_id, U128(amount)));
             total_effective.0 += amount;

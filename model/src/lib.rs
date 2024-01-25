@@ -1,3 +1,5 @@
+#![allow(clippy::new_ret_no_self, clippy::wrong_self_convention)]
+
 use integration_trait::make_integration_version;
 use near_contract_standards::storage_management::{StorageBalance, StorageBalanceBounds};
 use near_sdk::{

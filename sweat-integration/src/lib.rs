@@ -1,3 +1,5 @@
+#![allow(clippy::missing_errors_doc)]
+
 use async_trait::async_trait;
 use integration_utils::{contract_call::ContractCall, integration_contract::IntegrationContract};
 use near_sdk::{
@@ -18,7 +20,7 @@ pub struct SweatFt<'a> {
 
 impl FungibleTokenCoreIntegration for SweatFt<'_> {
     fn ft_transfer(&mut self, receiver_id: AccountId, amount: U128, memo: Option<String>) -> ContractCall<()> {
-        println!("▶️ Transfer {:?} fungible tokens to {}", amount, receiver_id);
+        println!("▶️ Transfer {amount:?} fungible tokens to {receiver_id}");
 
         let args = json!({
             "receiver_id": receiver_id,
@@ -39,10 +41,7 @@ impl FungibleTokenCoreIntegration for SweatFt<'_> {
         memo: Option<String>,
         msg: String,
     ) -> ContractCall<U128> {
-        println!(
-            "▶️ Transfer {:?} fungible tokens to {} with message: {}",
-            amount, receiver_id, msg
-        );
+        println!("▶️ Transfer {amount:?} fungible tokens to {receiver_id} with message: {msg}",);
 
         let args = json!({
             "receiver_id": receiver_id,

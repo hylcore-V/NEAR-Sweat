@@ -12,16 +12,19 @@ use near_sdk::{
 struct Contract {}
 
 #[near_bindgen]
+#[allow(dead_code)]
 impl Contract {
     #[init]
     pub fn new() -> Self {
         Self {}
     }
 
+    #[allow(clippy::unused_self)]
     pub fn record_batch_for_hold(&mut self, amounts: Vec<(AccountId, U128)>) {
-        log_str(&format!("Call record_batch_for_hold with {:?}", amounts));
+        log_str(&format!("Call record_batch_for_hold with {amounts:?}"));
     }
 
+    #[allow(clippy::unused_self)]
     pub fn exploit_on_record(&mut self, ft_account_id: AccountId, amount: U128) {
         log_str(&format!(
             "Try to call on_record in callback, ft account = {ft_account_id}"
