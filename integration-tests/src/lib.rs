@@ -42,7 +42,7 @@ async fn happy_flow() -> anyhow::Result<()> {
         .ft_contract()
         .defer_batch(
             vec![(alice.to_near(), 1000)],
-            context.holding_contract().as_account().to_near(),
+            context.claim_contract().as_account().to_near(),
         )
         .with_user(&oracle)
         .call()

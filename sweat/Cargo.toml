@@ -8,6 +8,10 @@ publish = false
 [lib]
 crate-type = ["cdylib"]
 
+[features]
+default = []
+integration-test = []
+
 [dependencies]
 sweat-model = { workspace = true }
 

@@ -16,6 +16,7 @@ use near_sdk::{
 use sweat_model::SweatApi;
 
 mod defer;
+mod integration;
 mod math;
 
 #[near_bindgen]

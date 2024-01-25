@@ -9,7 +9,8 @@ use near_sdk::{
 };
 use near_workspaces::{types::NearToken, Contract};
 use sweat_model::{
-    FungibleTokenCoreIntegration, StorageManagementIntegration, SweatApiIntegration, SweatDeferIntegration,
+    FungibleTokenCoreIntegration, IntegrationTestMethodsIntegration, StorageManagementIntegration, SweatApiIntegration,
+    SweatDeferIntegration,
 };
 
 pub const FT_CONTRACT: &str = "sweat";
@@ -180,6 +181,17 @@ impl SweatApiIntegration for SweatFt<'_> {
             .args_json(json!({
                 "steps_since_tge": steps_since_tge,
                 "steps": steps,
+            }))
+            .unwrap()
+    }
+}
+
+impl IntegrationTestMethodsIntegration for SweatFt<'_> {
+    fn calculate_payout_with_fee_for_batch(&self, batch_size: u32, claim_amount: u32) -> ContractCall<(U128, U128)> {
+        self.make_call("calculate_payout_with_fee_for_batch")
+            .args_json(json!({
+                "batch_size": batch_size,
+                "claim_amount": claim_amount,
             }))
             .unwrap()
     }

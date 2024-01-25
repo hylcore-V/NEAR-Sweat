@@ -9,6 +9,9 @@ install: ##@Miscellaneous Install dependencies
 build: ##@Build the contract locally.
 	./scripts/build.sh
 
+build-integration: ##@Build contract for integration tests
+	./scripts/build-integration.sh
+
 build-in-docker: ##@Build reproducible artifact in Docker.
 	./scripts/build-in-docker.sh
 

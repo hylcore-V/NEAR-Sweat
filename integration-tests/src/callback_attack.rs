@@ -21,7 +21,7 @@ async fn test_call_on_record_in_callback() -> anyhow::Result<()> {
 
     let target_amount = U128(1_000_000);
     let result = alice
-        .call(context.holding_contract().id(), "exploit_on_record")
+        .call(context.stub_contract().id(), "exploit_on_record")
         .args_json(json!({
             "ft_account_id": ft_contract_id,
             "amount": target_amount,
@@ -44,7 +44,6 @@ async fn test_call_on_record_directly() -> anyhow::Result<()> {
     let mut context = prepare_contract().await?;
 
     let alice = context.alice().await?;
-    let oracle = context.oracle().await?;
 
     let intruder_id = alice.to_near();
     let result = context
