@@ -25,5 +25,4 @@ pkg-config = "0.3.1"
 async-trait = "0.1.73"
 
 sweat-model = { workspace = true, features = ["integration-test"] }
-sweat-integration = { workspace = true }
 integration-utils = { workspace = true }

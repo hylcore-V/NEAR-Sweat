@@ -1,6 +1,6 @@
 #![cfg(test)]
 
-use integration_utils::{integration_contract::IntegrationContract, misc::ToNear};
+use integration_utils::misc::ToNear;
 use near_sdk::{json_types::U128, serde_json::json};
 use sweat_model::FungibleTokenCoreIntegration;
 
@@ -48,9 +48,9 @@ async fn test_call_on_record_directly() -> anyhow::Result<()> {
     let intruder_id = alice.to_near();
     let result = context
         .ft_contract()
-        .contract()
+        .contract
         .as_account()
-        .call(context.ft_contract().contract().id(), "on_record")
+        .call(context.ft_contract().contract.id(), "on_record")
         .args_json(json!({
             "receiver_id": intruder_id,
             "amount": "1000000",

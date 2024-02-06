@@ -7,6 +7,11 @@ use near_sdk::{
     AccountId, PromiseOrValue,
 };
 
+#[cfg(feature = "integration-test")]
+pub struct SweatContract<'a> {
+    pub contract: &'a near_workspaces::Contract,
+}
+
 #[make_integration_version]
 pub trait SweatApi {
     fn new(postfix: Option<String>) -> Self;
@@ -29,6 +34,7 @@ pub trait SweatDefer {
 /// Copy of near_sdk trait to use in integration tests
 #[make_integration_version]
 pub trait FungibleTokenCore {
+    #[deposit_one_yocto]
     fn ft_transfer(&mut self, receiver_id: AccountId, amount: U128, memo: Option<String>);
     fn ft_transfer_call(
         &mut self,
@@ -46,6 +52,7 @@ pub trait FungibleTokenCore {
 pub trait StorageManagement {
     // if `registration_only=true` MUST refund above the minimum balance if the account didn't exist and
     //     refund full deposit if the account exists.
+    #[deposit_yocto = near_sdk::env::storage_byte_cost() * 125]
     fn storage_deposit(&mut self, account_id: Option<AccountId>, registration_only: Option<bool>) -> StorageBalance;
 
     /// Withdraw specified amount of available Ⓝ for predecessor account.

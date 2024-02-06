@@ -5,7 +5,7 @@ edition = "2021"
 
 [features]
 default = []
-integration-test = ["dep:integration-utils"]
+integration-test = ["dep:integration-utils", "dep:near-workspaces"]
 
 [dependencies]
 anyhow = { workspace = true }
@@ -16,3 +16,4 @@ near-sdk = { workspace = true }
 near-contract-standards = { workspace = true }
 
 integration-utils = { workspace = true, optional = true }
+near-workspaces = { workspace = true, optional = true }
