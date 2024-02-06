@@ -1,16 +1,27 @@
 [workspace]
 members = [
-    "./sweat",
-    "./examples"
+    "sweat",
+    "sweat",
+    "sweat-integration",
+    "integration-tests",
+    "exploit-stub"
 ]
 
+resolver = "2"
 
-[profile.release]
-codegen-units = 1
-# s = optimize for binary size ("z" would additionally turn off loop vectorization)
-opt-level = "z"
-# link time optimization
-lto = true
-debug = false
-panic = "abort"
-overflow-checks = true
+[workspace.dependencies]
+tokio = "1.28.0"
+anyhow = "1.0.75"
+async-trait = "0.1.74"
+
+near-units = "0.2.0"
+near-workspaces = "0.10.0"
+
+near-sdk = { git = "https://github.com/sweatco/near-sdk-rs", rev = "8c48b26cc48d969c1e5f3162141fe9c824fccecd" }
+near-contract-standards = { git = "https://github.com/sweatco/near-sdk-rs", rev = "8c48b26cc48d969c1e5f3162141fe9c824fccecd" }
+
+integration-trait = { git = "https://github.com/sweatco/integration-utils.git", rev = "c30efebede6a3e40111c3be95e89564fe2698db1" }
+integration-utils = { git = "https://github.com/sweatco/integration-utils.git", rev = "c30efebede6a3e40111c3be95e89564fe2698db1" }
+
+sweat-model = { path = "model" }
+sweat-integration = { path = "sweat-integration" }

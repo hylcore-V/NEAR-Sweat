@@ -82,3 +82,9 @@ Mint tokens
 ```bash
 near call $TOKEN_ACCOUNT_ID mint_tge '{"amount":"100", "account_for":"<account_for>"}' --accountId $TOKEN_ACCOUNT_ID --gas=300000000000000
 ```
+
+### Deferring tokens
+
+![Smart contracts interaction](doc/contracts_interaction.png)
+
+For information about claiming tokens from Holding account refer to the [Sweat Claim repo](https://github.com/sweatco/sweat-claim). 

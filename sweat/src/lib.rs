@@ -1,18 +1,23 @@
-use near_contract_standards::fungible_token::events::{FtBurn, FtMint};
-use near_contract_standards::fungible_token::metadata::{
-    FungibleTokenMetadata, FungibleTokenMetadataProvider,
-};
-use near_contract_standards::fungible_token::FungibleToken;
-use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::UnorderedSet;
-use near_sdk::json_types::{U128, U64};
-use near_sdk::require;
-mod math;
-
-use near_sdk::{env, near_bindgen, AccountId, Balance, PanicOnDefault, PromiseOrValue};
-
 #[macro_use]
 extern crate static_assertions;
+
+use near_contract_standards::fungible_token::{
+    events::{FtBurn, FtMint},
+    metadata::{FungibleTokenMetadata, FungibleTokenMetadataProvider},
+    FungibleToken,
+};
+use near_sdk::{
+    borsh::{self, BorshDeserialize, BorshSerialize},
+    collections::UnorderedSet,
+    env,
+    json_types::{U128, U64},
+    near_bindgen, require, AccountId, Balance, PanicOnDefault, PromiseOrValue,
+};
+use sweat_model::{Payout, SweatApi};
+
+mod defer;
+mod integration;
+mod math;
 
 #[near_bindgen]
 #[derive(BorshSerialize, BorshDeserialize, PanicOnDefault)]
@@ -23,89 +28,88 @@ pub struct Contract {
 }
 
 #[near_bindgen]
-impl Contract {
+impl SweatApi for Contract {
     #[init]
-    pub fn new(postfix: Option<String>) -> Self {
+    fn new(postfix: Option<String>) -> Self {
         Self {
             oracles: UnorderedSet::new(b"s"),
             token: FungibleToken::new(b"t", postfix),
             steps_since_tge: U64::from(0),
         }
     }
-    pub fn add_oracle(&mut self, account_id: &AccountId) {
+    fn add_oracle(&mut self, account_id: &AccountId) {
         require!(
             env::predecessor_account_id() == env::current_account_id(),
             "Unauthorized access! Only token owner can add oracles!"
         );
-        require!(self.oracles.insert(account_id) == true, "Already exists!");
-        env::log_str(&format!("Oracle {} was added", account_id));
+        require!(self.oracles.insert(account_id), "Already exists!");
+        env::log_str(&format!("Oracle {account_id} was added"));
     }
 
-    pub fn remove_oracle(&mut self, account_id: &AccountId) {
+    fn remove_oracle(&mut self, account_id: &AccountId) {
         require!(
             env::predecessor_account_id() == env::current_account_id(),
             "Unauthorized access! Only token owner can remove oracles!"
         );
-        require!(
-            self.oracles.remove(account_id) == true,
-            "No such oracle was found!"
-        );
-        env::log_str(&format!("Oracle {} was removed", account_id));
+        require!(self.oracles.remove(account_id), "No such oracle was found!");
+        env::log_str(&format!("Oracle {account_id} was removed"));
     }
 
-    pub fn get_oracles(&self) -> Vec<AccountId> {
+    fn get_oracles(&self) -> Vec<AccountId> {
         self.oracles.to_vec()
     }
 
-    pub fn tge_mint(&mut self, account_id: &AccountId, amount: U128) {
+    fn tge_mint(&mut self, account_id: &AccountId, amount: U128) {
         require!(
             env::predecessor_account_id() == env::current_account_id(),
             "Unauthorized access! Only token owner can do TGE!"
         );
-        internal_deposit(&mut self.token, &account_id, amount.0);
+        internal_deposit(&mut self.token, account_id, amount.0);
         FtMint {
             owner_id: account_id,
             amount: &amount,
             memo: None,
         }
-        .emit()
+        .emit();
     }
 
-    pub fn tge_mint_batch(&mut self, batch: Vec<(AccountId, U128)>) {
+    fn tge_mint_batch(&mut self, batch: Vec<(AccountId, U128)>) {
         require!(
             env::predecessor_account_id() == env::current_account_id(),
             "Unauthorized access! Only token owner can do TGE!"
         );
         let mut events = Vec::with_capacity(batch.len());
-        for i in 0..batch.len() {
-            internal_deposit(&mut self.token, &batch[i].0, batch[i].1 .0);
-            events.push(FtMint {
-                owner_id: &batch[i].0,
-                amount: &batch[i].1,
+        for (account_id, steps_count) in &batch {
+            // let steps_count = steps_count.0;
+            internal_deposit(&mut self.token, account_id, steps_count.0);
+
+            let event = FtMint {
+                owner_id: account_id,
+                amount: steps_count,
                 memo: None,
-            })
+            };
+            events.push(event);
         }
         if !events.is_empty() {
             FtMint::emit_many(events.as_slice());
         }
     }
 
-    pub fn burn(&mut self, amount: &U128) {
-        self.token
-            .internal_withdraw(&env::predecessor_account_id(), amount.0);
+    fn burn(&mut self, amount: &U128) {
+        self.token.internal_withdraw(&env::predecessor_account_id(), amount.0);
         FtBurn {
+            amount,
             owner_id: &env::predecessor_account_id(),
-            amount: amount,
             memo: None,
         }
-        .emit()
+        .emit();
     }
 
-    pub fn get_steps_since_tge(&self) -> U64 {
+    fn get_steps_since_tge(&self) -> U64 {
         self.steps_since_tge
     }
 
-    pub fn record_batch(&mut self, steps_batch: Vec<(AccountId, u16)>) {
+    fn record_batch(&mut self, steps_batch: Vec<(AccountId, u32)>) {
         require!(
             self.oracles.contains(&env::predecessor_account_id()),
             "Unauthorized access! Only oracle can call that!"
@@ -113,14 +117,14 @@ impl Contract {
         let mut oracle_fee: U128 = U128(0);
         let mut sweats: Vec<U128> = Vec::with_capacity(steps_batch.len() + 1);
         let mut events = Vec::with_capacity(steps_batch.len() + 1);
-        for i in 0..steps_batch.len() {
-            let sweat_to_mint: u128 = self.formula(self.steps_since_tge, steps_batch[i].1).0;
-            let trx_oracle_fee: u128 = sweat_to_mint * 5 / 100;
-            let minted_to_user: u128 = sweat_to_mint - trx_oracle_fee;
-            oracle_fee.0 = oracle_fee.0 + trx_oracle_fee;
-            internal_deposit(&mut self.token, &steps_batch[i].0, minted_to_user);
+
+        for (account_id, steps_count) in &steps_batch {
+            let (minted_to_user, trx_oracle_fee) = self.calculate_tokens_amount(*steps_count);
+            oracle_fee.0 += trx_oracle_fee;
+            internal_deposit(&mut self.token, account_id, minted_to_user);
+
             sweats.push(U128(minted_to_user));
-            self.steps_since_tge.0 += steps_batch[i].1 as u64;
+            self.steps_since_tge.0 += u64::from(*steps_count);
         }
         for i in 0..steps_batch.len() {
             events.push(FtMint {
@@ -129,11 +133,8 @@ impl Contract {
                 memo: None,
             });
         }
-        internal_deposit(
-            &mut self.token,
-            &env::predecessor_account_id(),
-            oracle_fee.0,
-        );
+
+        internal_deposit(&mut self.token, &env::predecessor_account_id(), oracle_fee.0);
         let oracle_event = FtMint {
             owner_id: &env::predecessor_account_id(),
             amount: &oracle_fee,
@@ -143,8 +144,18 @@ impl Contract {
         FtMint::emit_many(events.as_slice());
     }
 
-    pub fn formula(&self, steps_since_tge: U64, steps: u16) -> U128 {
-        U128(math::formula(steps_since_tge.0 as f64, steps as f64))
+    #[allow(clippy::cast_precision_loss)]
+    fn formula(&self, steps_since_tge: U64, steps: u32) -> U128 {
+        U128(math::formula(steps_since_tge.0 as f64, f64::from(steps)))
+    }
+}
+
+impl Contract {
+    pub(crate) fn calculate_tokens_amount(&self, steps: u32) -> (u128, u128) {
+        let sweat_to_mint: u128 = self.formula(self.steps_since_tge, steps).0;
+        let payout = Payout::from(sweat_to_mint);
+
+        (payout.amount_for_user, payout.fee)
     }
 }
 
@@ -185,9 +196,16 @@ impl FungibleTokenMetadataProvider for Contract {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use near_sdk::test_utils::VMContextBuilder;
-    use near_sdk::{testing_env, AccountId};
+    use near_contract_standards::fungible_token::core::FungibleTokenCore;
+    use near_sdk::{
+        json_types::{U128, U64},
+        test_utils::VMContextBuilder,
+        testing_env, AccountId,
+    };
+    use sweat_model::SweatApi;
+
+    use crate::Contract;
+
     const EPS: f64 = 0.00001;
 
     fn sweat_the_token() -> AccountId {
@@ -218,7 +236,7 @@ mod tests {
     fn add_oracle_access() {
         testing_env!(get_context(sweat_the_token(), sweat_the_token()).build());
         let mut token = Contract::new(Some(".u.sweat".to_string()));
-        assert_eq!(true, token.get_oracles().is_empty());
+        assert!(token.get_oracles().is_empty());
         testing_env!(get_context(sweat_the_token(), sweat_oracle()).build());
         token.add_oracle(&sweat_oracle());
     }
@@ -228,7 +246,7 @@ mod tests {
     fn remove_oracle_access() {
         testing_env!(get_context(sweat_the_token(), sweat_the_token()).build());
         let mut token = Contract::new(Some(".u.sweat".to_string()));
-        assert_eq!(true, token.get_oracles().is_empty());
+        assert!(token.get_oracles().is_empty());
         token.add_oracle(&sweat_oracle());
         assert_eq!(vec![sweat_oracle()], token.get_oracles());
         testing_env!(get_context(sweat_the_token(), sweat_oracle()).build());
@@ -240,7 +258,7 @@ mod tests {
     fn add_same_oracle() {
         testing_env!(get_context(sweat_the_token(), sweat_the_token()).build());
         let mut token = Contract::new(Some(".u.sweat".to_string()));
-        assert_eq!(true, token.get_oracles().is_empty());
+        assert!(token.get_oracles().is_empty());
         token.add_oracle(&sweat_oracle());
         token.add_oracle(&sweat_oracle());
     }
@@ -250,7 +268,7 @@ mod tests {
     fn remove_fake_oracle() {
         testing_env!(get_context(sweat_the_token(), sweat_the_token()).build());
         let mut token = Contract::new(Some(".u.sweat".to_string()));
-        assert_eq!(true, token.get_oracles().is_empty());
+        assert!(token.get_oracles().is_empty());
         token.add_oracle(&sweat_oracle());
         assert_eq!(vec![sweat_oracle()], token.get_oracles());
         token.remove_oracle(&user1());
@@ -260,11 +278,11 @@ mod tests {
     fn add_remove_oracle() {
         testing_env!(get_context(sweat_the_token(), sweat_the_token()).build());
         let mut token = Contract::new(Some(".u.sweat".to_string()));
-        assert_eq!(true, token.get_oracles().is_empty());
+        assert!(token.get_oracles().is_empty());
         token.add_oracle(&sweat_oracle());
         assert_eq!(vec![sweat_oracle()], token.get_oracles());
         token.remove_oracle(&sweat_oracle());
-        assert_eq!(true, token.get_oracles().is_empty());
+        assert!(token.get_oracles().is_empty());
     }
 
     #[test]
@@ -272,7 +290,7 @@ mod tests {
     fn mint_steps_access_1() {
         testing_env!(get_context(sweat_the_token(), sweat_the_token()).build());
         let mut token = Contract::new(Some(".u.sweat".to_string()));
-        assert_eq!(true, token.get_oracles().is_empty());
+        assert!(token.get_oracles().is_empty());
         token.add_oracle(&sweat_oracle());
         assert_eq!(vec![sweat_oracle()], token.get_oracles());
         token.record_batch(vec![(user1(), 10_000), (user2(), 10_000)]);
@@ -283,7 +301,7 @@ mod tests {
     fn minting_steps_access_2() {
         testing_env!(get_context(sweat_the_token(), sweat_the_token()).build());
         let mut token = Contract::new(Some(".u.sweat".to_string()));
-        assert_eq!(true, token.get_oracles().is_empty());
+        assert!(token.get_oracles().is_empty());
         token.add_oracle(&sweat_oracle());
         assert_eq!(vec![sweat_oracle()], token.get_oracles());
         testing_env!(get_context(sweat_the_token(), user1()).build());
@@ -295,27 +313,14 @@ mod tests {
         testing_env!(get_context(sweat_the_token(), sweat_the_token()).build());
         let mut token = Contract::new(Some(".u.sweat".to_string()));
         assert_eq!(U64(0), token.get_steps_since_tge());
-        assert_eq!(true, token.get_oracles().is_empty());
+        assert!(token.get_oracles().is_empty());
         token.add_oracle(&sweat_oracle());
         assert_eq!(vec![sweat_oracle()], token.get_oracles());
         testing_env!(get_context(sweat_the_token(), sweat_oracle()).build());
         token.record_batch(vec![(user1(), 10_000), (user2(), 10_000)]);
-        assert_eq!(
-            true,
-            (9.499999991723028480 - token.token.ft_balance_of(user1()).0 as f64 / 1e+18).abs()
-                < EPS
-        );
-        assert_eq!(
-            true,
-            (9.499999975169081549 - token.token.ft_balance_of(user2()).0 as f64 / 1e+18).abs()
-                < EPS
-        );
-        assert_eq!(
-            true,
-            (0.999999998257479475 - token.token.ft_balance_of(sweat_oracle()).0 as f64 / 1e+18)
-                .abs()
-                < EPS
-        );
+        assert!((9.499_999_991_723_028 - token.token.ft_balance_of(user1()).0 as f64 / 1e+18).abs() < EPS);
+        assert!((9.499_999_975_169_082 - token.token.ft_balance_of(user2()).0 as f64 / 1e+18).abs() < EPS);
+        assert!((0.999_999_998_257_479_4 - token.token.ft_balance_of(sweat_oracle()).0 as f64 / 1e+18).abs() < EPS);
         assert_eq!(U64(2 * 10_000), token.get_steps_since_tge());
     }
 
@@ -324,7 +329,7 @@ mod tests {
     fn tge_access_1() {
         testing_env!(get_context(sweat_the_token(), sweat_the_token()).build());
         let mut token = Contract::new(Some(".u.sweat".to_string()));
-        assert_eq!(true, token.get_oracles().is_empty());
+        assert!(token.get_oracles().is_empty());
         token.add_oracle(&sweat_oracle());
         testing_env!(get_context(sweat_the_token(), sweat_oracle()).build());
         token.tge_mint(&user1(), U128(9499999991723028480));
@@ -347,51 +352,36 @@ mod tests {
     fn tge_liquid() {
         testing_env!(get_context(sweat_the_token(), sweat_the_token()).build());
         let mut token = Contract::new(Some(".u.sweat".to_string()));
-        assert_eq!(true, token.get_oracles().is_empty());
+        assert!(token.get_oracles().is_empty());
         token.add_oracle(&sweat_oracle());
         token.tge_mint(&user1(), U128(9499999991723028480));
-        assert_eq!(
-            true,
-            (9.499999991723028480 - token.token.ft_balance_of(user1()).0 as f64 / 1e+18).abs()
-                < EPS
-        );
+        assert!((9.499_999_991_723_028 - token.token.ft_balance_of(user1()).0 as f64 / 1e+18).abs() < EPS);
     }
 
     #[test]
     fn tge_liquid_batch() {
         testing_env!(get_context(sweat_the_token(), sweat_the_token()).build());
         let mut token = Contract::new(Some(".u.sweat".to_string()));
-        assert_eq!(true, token.get_oracles().is_empty());
+        assert!(token.get_oracles().is_empty());
         token.add_oracle(&sweat_oracle());
         token.tge_mint_batch(vec![
             (user1(), U128(9499999991723028480)),
             (user2(), U128(9499999991723028480)),
         ]);
-        assert_eq!(
-            true,
-            (9.499999991723028480 - token.token.ft_balance_of(user1()).0 as f64 / 1e+18).abs()
-                < EPS
-        );
-        assert_eq!(
-            true,
-            (9.499999975169081549 - token.token.ft_balance_of(user2()).0 as f64 / 1e+18).abs()
-                < EPS
-        );
+        assert!((9.499_999_991_723_028 - token.token.ft_balance_of(user1()).0 as f64 / 1e+18).abs() < EPS);
+        assert!((9.499_999_975_169_082 - token.token.ft_balance_of(user2()).0 as f64 / 1e+18).abs() < EPS);
     }
 
     #[test]
     fn burn() {
         testing_env!(get_context(sweat_the_token(), sweat_the_token()).build());
         let mut token = Contract::new(Some(".u.sweat".to_string()));
-        assert_eq!(true, token.get_oracles().is_empty());
+        assert!(token.get_oracles().is_empty());
         token.add_oracle(&sweat_oracle());
         token.tge_mint(&user1(), U128(9499999991723028480));
         testing_env!(get_context(sweat_the_token(), user1()).build());
         token.burn(&U128(9499999991723028480));
-        assert_eq!(
-            true,
-            (0.0 - token.token.ft_balance_of(user1()).0 as f64 / 1e+18).abs() < EPS
-        );
+        assert!((0.0 - token.token.ft_balance_of(user1()).0 as f64 / 1e+18).abs() < EPS);
     }
 
     #[test]
@@ -399,32 +389,23 @@ mod tests {
     fn transfer_to_unregistered() {
         testing_env!(get_context(sweat_the_token(), sweat_the_token()).build());
         let mut token = Contract::new(Some(".u.sweat".to_string()));
-        assert_eq!(true, token.get_oracles().is_empty());
+        assert!(token.get_oracles().is_empty());
         token.add_oracle(&sweat_oracle());
         token.tge_mint(&user1(), U128(9499999991723028480));
         testing_env!(get_context(sweat_the_token(), user1()).build());
 
-        token
-            .token
-            .ft_transfer(user2(), U128(9499999991723028480), None);
+        token.token.ft_transfer(user2(), U128(9499999991723028480), None);
 
-        assert_eq!(
-            true,
-            (0.0 - token.token.ft_balance_of(user1()).0 as f64 / 1e+18).abs() < EPS
-        );
+        assert!((0.0 - token.token.ft_balance_of(user1()).0 as f64 / 1e+18).abs() < EPS);
 
-        assert_eq!(
-            true,
-            (9.499999991723028480 - token.token.ft_balance_of(user2()).0 as f64 / 1e+18).abs()
-                < EPS
-        );
+        assert!((9.499_999_991_723_028 - token.token.ft_balance_of(user2()).0 as f64 / 1e+18).abs() < EPS);
     }
 
     #[test]
     fn transfer_to_registered() {
         testing_env!(get_context(sweat_the_token(), sweat_the_token()).build());
         let mut token = Contract::new(Some(".u.sweat".to_string()));
-        assert_eq!(true, token.get_oracles().is_empty());
+        assert!(token.get_oracles().is_empty());
         token.add_oracle(&sweat_oracle());
         token.tge_mint_batch(vec![
             (user1(), U128(9499999991723028480)),
@@ -432,20 +413,10 @@ mod tests {
         ]);
         testing_env!(get_context(sweat_the_token(), user1()).build());
 
-        token
-            .token
-            .ft_transfer(user2(), U128(9499999991723028480), None);
+        token.token.ft_transfer(user2(), U128(9499999991723028480), None);
 
-        assert_eq!(
-            true,
-            (0.0 - token.token.ft_balance_of(user1()).0 as f64 / 1e+18).abs() < EPS
-        );
+        assert!((0.0 - token.token.ft_balance_of(user1()).0 as f64 / 1e+18).abs() < EPS);
 
-        assert_eq!(
-            true,
-            (9.499999991723028480 * 2.0 - token.token.ft_balance_of(user2()).0 as f64 / 1e+18)
-                .abs()
-                < EPS
-        );
+        assert!((9.499_999_991_723_028 * 2.0 - token.token.ft_balance_of(user2()).0 as f64 / 1e+18).abs() < EPS);
     }
 }

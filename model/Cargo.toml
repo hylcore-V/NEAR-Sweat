@@ -1,0 +1,18 @@
+[package]
+name = "sweat-model"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = []
+integration-test = ["dep:integration-utils"]
+
+[dependencies]
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+integration-trait = { workspace = true }
+
+near-sdk = { workspace = true }
+near-contract-standards = { workspace = true }
+
+integration-utils = { workspace = true, optional = true }
