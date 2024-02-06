@@ -13,3 +13,4 @@ As these 3rd party audits are completed and issues are sufficiently addressed, w
 
 - **[July 2022 - Quantstamp](https://sweateconomy.com/assets/quantstamp_sweat_economy_security_analysis.pdf)**
 - **[September 2022 - Pessimistic](https://sweateconomy.com/assets/pessimistic_sweat_economy_security_analysis.pdf)**
+- **[January 2024 – Guvenkaya](https://sweateconomy.com/assets/guvenkaya_sweat_economy_security_analysis_jan_2024.pdf)**
