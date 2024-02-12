@@ -12,7 +12,7 @@ async fn test_formula() -> Result<()> {
 
     let oracle = context.oracle().await?;
 
-    let steps = context.ft_contract().get_steps_since_tge().call().await?;
+    let steps = context.ft_contract().get_steps_since_tge().await?;
 
     assert_eq!(0, steps.0);
 
@@ -43,7 +43,6 @@ async fn test_formula() -> Result<()> {
                 .ft_contract()
                 .formula(U64(tge), steps)
                 .with_user(&oracle)
-                .call()
                 .await?
                 .0;
 

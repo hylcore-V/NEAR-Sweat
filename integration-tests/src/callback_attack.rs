@@ -16,7 +16,7 @@ async fn test_call_on_record_in_callback() -> anyhow::Result<()> {
 
     let alice = context.alice().await?;
 
-    let alice_balance_before_attack = context.ft_contract().ft_balance_of(alice.to_near()).call().await?;
+    let alice_balance_before_attack = context.ft_contract().ft_balance_of(alice.to_near()).await?;
     let ft_contract_id = context.ft_contract().account();
 
     let target_amount = U128(1_000_000);
@@ -33,7 +33,7 @@ async fn test_call_on_record_in_callback() -> anyhow::Result<()> {
 
     assert!(result.has_panic("Method on_record is private"));
 
-    let alice_balance_after_attack = context.ft_contract().ft_balance_of(alice.to_near()).call().await?;
+    let alice_balance_after_attack = context.ft_contract().ft_balance_of(alice.to_near()).await?;
     assert_eq!(alice_balance_before_attack, alice_balance_after_attack);
 
     Ok(())

@@ -19,7 +19,6 @@ async fn test_defer() -> anyhow::Result<()> {
     let holder_balance = context
         .ft_contract()
         .ft_balance_of(claim_contract_account.clone())
-        .call()
         .await?;
 
     assert_eq!(holder_balance.0, 0);
@@ -27,7 +26,6 @@ async fn test_defer() -> anyhow::Result<()> {
     let (total_fee, total_for_user) = context
         .ft_contract()
         .calculate_payout_with_fee_for_batch(BATCH_SIZE, CLAIM_AMOUNT)
-        .call()
         .await?;
 
     let batch: Vec<_> = (0..BATCH_SIZE).map(|_| (alice.to_near(), CLAIM_AMOUNT)).collect();
@@ -36,19 +34,17 @@ async fn test_defer() -> anyhow::Result<()> {
         .ft_contract()
         .defer_batch(batch, claim_contract_account.clone())
         .with_user(&oracle)
-        .call()
         .await?;
 
-    let alice_balance = context.ft_contract().ft_balance_of(alice.to_near()).call().await?;
+    let alice_balance = context.ft_contract().ft_balance_of(alice.to_near()).await?;
     assert_eq!(0, alice_balance.0);
 
     let claim_contract_balance = context
         .ft_contract()
         .ft_balance_of(claim_contract_account.clone())
-        .call()
         .await?;
 
-    let oracle_balance = context.ft_contract().ft_balance_of(oracle.to_near()).call().await?;
+    let oracle_balance = context.ft_contract().ft_balance_of(oracle.to_near()).await?;
 
     assert_eq!(oracle_balance, total_fee);
     assert_eq!(claim_contract_balance, total_for_user);

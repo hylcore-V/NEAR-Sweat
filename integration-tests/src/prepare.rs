@@ -68,31 +68,24 @@ pub async fn prepare_contract() -> Result<Context> {
     let long = context.long_account_name().await?;
     let token_account_id = context.ft_contract().contract.as_account().to_near();
 
-    context
-        .ft_contract()
-        .new(".u.sweat.testnet".to_string().into())
-        .call()
-        .await?;
+    context.ft_contract().new(".u.sweat.testnet".to_string().into()).await?;
 
     context
         .ft_contract()
         .storage_deposit(oracle.to_near().into(), None)
-        .call()
         .await?;
 
     context
         .ft_contract()
         .storage_deposit(alice.to_near().into(), None)
-        .call()
         .await?;
 
     context
         .ft_contract()
         .storage_deposit(long.to_near().into(), None)
-        .call()
         .await?;
 
-    context.ft_contract().add_oracle(&oracle.to_near()).call().await?;
+    context.ft_contract().add_oracle(&oracle.to_near()).await?;
 
     let claim_contract_result = context
         .claim_contract()
@@ -127,7 +120,6 @@ pub async fn prepare_contract() -> Result<Context> {
     context
         .ft_contract()
         .storage_deposit(context.claim_contract().as_account().to_near().into(), None)
-        .call()
         .await?;
 
     Ok(context)
