@@ -7,17 +7,21 @@ use sweat_model::SweatDefer;
 
 use crate::{internal_deposit, Contract, ContractExt};
 
-const ONE_GGAS: u64 = Gas::ONE_TERA.0 / 1000;
+const GAS_FOR_DEFER_CALLBACK: Gas = Gas(5 * Gas::ONE_TERA.0);
+const GAS_FOR_DEFER: Gas = Gas(30 * Gas::ONE_TERA.0);
 
 #[near_bindgen]
 impl SweatDefer for Contract {
     fn defer_batch(&mut self, steps_batch: Vec<(AccountId, u32)>, holding_account_id: AccountId) -> PromiseOrValue<()> {
         require!(
+            env::prepaid_gas() > GAS_FOR_DEFER,
+            "Not enough gas to complete the operation"
+        );
+
+        require!(
             self.oracles.contains(&env::predecessor_account_id()),
             "Unauthorized access! Only oracle can call that!"
         );
-
-        let batch_len = steps_batch.len() as u64;
 
         let mut accounts_tokens: Vec<(AccountId, U128)> = Vec::new();
         let mut total_effective: U128 = U128(0);
@@ -36,8 +40,10 @@ impl SweatDefer for Contract {
             "amounts": accounts_tokens,
         });
 
-        // These values calculated in `measure_record_batch_for_hold_test` in claim contract.
-        let record_batch_for_hold_gas = Gas::ONE_TERA * 8 + Gas(batch_len * ONE_GGAS * 320);
+        let record_batch_for_hold_gas = Gas(env::prepaid_gas()
+            .0
+            .checked_sub(GAS_FOR_DEFER.0)
+            .unwrap_or_else(|| panic_str("Prepaid gas overflow")));
 
         Promise::new(holding_account_id.clone())
             .function_call(
@@ -48,7 +54,7 @@ impl SweatDefer for Contract {
             )
             .then(
                 ext_ft_transfer_callback::ext(env::current_account_id())
-                    .with_static_gas(Gas::ONE_TERA * 5)
+                    .with_static_gas(GAS_FOR_DEFER_CALLBACK)
                     .on_record(
                         holding_account_id,
                         total_effective,

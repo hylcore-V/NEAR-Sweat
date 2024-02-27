@@ -1,5 +1,7 @@
 #![cfg(test)]
 
+use std::future::IntoFuture;
+
 use anyhow::Result;
 use integration_utils::measure::outcome_storage::OutcomeStorage;
 use near_workspaces::types::Gas;
@@ -28,7 +30,7 @@ async fn measure_record_batch() -> Result<Gas> {
             .ft_contract()
             .record_batch(Default::default())
             .with_user(&oracle)
-            .call(),
+            .into_future(),
     )
     .await?;
 

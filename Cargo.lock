@@ -1763,7 +1763,6 @@ dependencies = [
  "near-units",
  "near-workspaces",
  "pkg-config",
- "sweat-integration",
  "sweat-model",
  "tokio",
  "tracing",
@@ -1773,7 +1772,7 @@ dependencies = [
 [[package]]
 name = "integration-trait"
 version = "0.1.0"
-source = "git+https://github.com/sweatco/integration-utils.git?rev=c30efebede6a3e40111c3be95e89564fe2698db1#c30efebede6a3e40111c3be95e89564fe2698db1"
+source = "git+https://github.com/sweatco/integration-utils.git?rev=e54dc392ef42837123dd2c0ad19b6d6b815192d7#e54dc392ef42837123dd2c0ad19b6d6b815192d7"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1783,7 +1782,7 @@ dependencies = [
 [[package]]
 name = "integration-utils"
 version = "0.1.0"
-source = "git+https://github.com/sweatco/integration-utils.git?rev=c30efebede6a3e40111c3be95e89564fe2698db1#c30efebede6a3e40111c3be95e89564fe2698db1"
+source = "git+https://github.com/sweatco/integration-utils.git?rev=e54dc392ef42837123dd2c0ad19b6d6b815192d7#e54dc392ef42837123dd2c0ad19b6d6b815192d7"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -3916,25 +3915,11 @@ checksum = "81cdd64d312baedb58e21336b31bc043b77e01cc99033ce76ef539f78e965ebc"
 
 [[package]]
 name = "sweat"
-version = "0.1.0"
+version = "1.2.1"
 dependencies = [
  "near-contract-standards",
  "near-sdk",
  "static_assertions",
- "sweat-model",
-]
-
-[[package]]
-name = "sweat-integration"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "integration-utils",
- "near-contract-standards",
- "near-sdk",
- "near-units",
- "near-workspaces",
  "sweat-model",
 ]
 
@@ -3948,6 +3933,7 @@ dependencies = [
  "integration-utils",
  "near-contract-standards",
  "near-sdk",
+ "near-workspaces",
 ]
 
 [[package]]
